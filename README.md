@@ -10,7 +10,7 @@ In the spirit of open source software development, Model always encourages commu
 Environments in which to use Model
 --------------------------------------
 
-- [source](https://github.com/itwrite/js-model/blob/master/model-1.0.1.min.js)
+- [source](https://github.com/itwrite/js-model/blob/master/model-1.0.1.js)
 
 
 What you need to build your own Model
