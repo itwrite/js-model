@@ -41,9 +41,9 @@ How use Model
 Examples:
 
 ```bash
-M(response.list)
-.join("STAT_MO",response.list1,'l.STAT_MO','left')
-.fields(['*','ITEM_CD','FREE_DIM_NAM1','CMCC_BRANCH_CD'])//['*','t.STAT_MO as 月份','l.CMCC_BRANCH_CD as id'])
+M(response.list1)
+.join("STAT_MO",list2,'l.STAT_MO','left')
+.fields(['*','ITEM_CD','l.FREE_DIM_NAM1','CMCC_BRANCH_CD'])//['*','t.STAT_MO as 月份','l.CMCC_BRANCH_CD as id'])
 .where({"CMCC_BRANCH_CD":'201608'})
 .where_between('FREE_DIM_NAM1',[100,23232])
 .where_like('ITEM_CD','07411')
