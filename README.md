@@ -1,4 +1,4 @@
-[js-Model](https://github.com/itwrite/js-model/) — New Wave JavaScript
+[Model](https://github.com/itwrite/js-model/) — New Wave JavaScript
 ==================================================
 
 Contribution Guides
@@ -7,13 +7,13 @@ Contribution Guides
 In the spirit of open source software development, Model always encourages community code contribution. To help you get started.
 
 
-Environments in which to use js-Model
+Environments in which to use Model
 --------------------------------------
 
 - [source](https://github.com/itwrite/js-model/blob/master/model-1.0.1.min.js)
 
 
-What you need to build your own js-Model
+What you need to build your own Model
 --------------------------------------
 
 In order to build Model, you need to have the latest Node.js/npm and git 1.7 or later. Earlier versions might work, but are not supported.
@@ -27,10 +27,10 @@ Linux/BSD users should use their appropriate package managers to install git and
 if you swing that way. Easy-peasy.
 
 
-How to build your own js-Model
+How to build your own Model
 ----------------------------
 
-Clone a copy of the main js-Model git repo by running:
+Clone a copy of the main Model git repo by running:
 
 ```bash
 git clone git://github.com/itwrite/js-model.git
