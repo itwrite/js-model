@@ -51,8 +51,8 @@ M(response.list)
 .where_not_in("l.FREE_DIM_NAM1",['201609','29304'],'or')
 .order_by({"FREE_DIM_NAM1":'desc'})
 .limit(0,10)
-.toSql(true)
+//.toSql(true) //if true,then return M and console.log(sql);others return `sql`,just use to make sure your logic is right
 .fetch(function (i,row) {
      console.log(row['ITEM_CD']);
-})
+});//Here you can give it a callback Function, then it will be call when foreach very item of result;
 ```
