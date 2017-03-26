@@ -22,7 +22,7 @@
         factory(global);
     }
 }(typeof window !== "undefined" ? window : this, function (window, noGlobal) {
-    var _debug = true,
+    var _debug = false,
         __time = null,
         __data = [],
         __table_alias_names = {},
@@ -125,19 +125,19 @@
     };
 
     function compareFunc(param1, param2) {
-        //如果两个参数均为字符串类型
+        //if both are strings
         if (typeof param1 == "string" && typeof param2 == "string") {
             return param1.localeCompare(param2);
         }
-        //如果参数1为数字，参数2为字符串
+        //if param1 is a number but param2 is a string
         if (typeof param1 == "number" && typeof param2 == "string") {
             return -1;
         }
-        //如果参数1为字符串，参数2为数字
+        //if param1 is a string but param2 is a nnumber
         if (typeof param1 == "string" && typeof param2 == "number") {
             return 1;
         }
-        //如果两个参数均为数字
+        //if both are numbers
         if (typeof param1 == "number" && typeof param2 == "number") {
             if (param1 > param2) return 1;
             if (param1 == param2) return 0;
