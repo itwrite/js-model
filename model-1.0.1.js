@@ -538,7 +538,11 @@
     Algorithm.extend({
         split_name: function (name, glue) {
             glue = glue ? glue : ' ';
+            /**
+             * 把多个空格的地方替换为一个空格，然后再把左右的空格去掉
+             */
             name = Helper.trim(name.replace(/\s+/g, ' '));
+            //按空格切割，第一个即表名，如果切割后大于1，第二个则为别名，否则表名即为别名
             var arr = name.split(glue);
             name = arr[0];
             return [name, (arr.length > 1 ? arr[1] : name)];
@@ -749,7 +753,7 @@
          * @param wheres
          * @returns {*}
          */
-        order_by: function (list, order_by_arr, order_by_i, wheres) {
+        order_by: function (list, order_by_arr, order_by_i, wheres,columns) {
             order_by_i = order_by_i ? order_by_i : 0;
             var that = this, new_list = [];
             if (order_by_arr.length > 0 && order_by_i < order_by_arr.length) {
@@ -800,32 +804,27 @@
                      */
                     Helper.each(keys, function (i, k) {
                         var lst = groups[k];
-                        /**
-                         * 如果还有，则继续深度排取
-                         */
-                        if (order_by_i < order_by_arr.length - 1) {
-                            var _lst = that.order_by(lst, order_by_arr, order_by_i + 1, wheres);
-                            Helper.each(_lst, function (j, row) {
-                                new_list.push(row);
-                            });
-                        } else {
-                            Helper.each(lst, function (i, row) {
-                                /**/
-                                if (that.is_match(row, wheres)) {
-                                    new_list.push(row);
-                                }
-                            });
-                        }
+                        var _lst = that.order_by(lst, order_by_arr, order_by_i + 1, wheres,columns);
+                        Helper.each(_lst, function (j, row) {
+                            new_list.push(row);
+                        });
                     });
                 } else {
-                    return that.order_by(list, order_by_arr, order_by_i + 1, wheres);
+                    return that.order_by(list, order_by_arr, order_by_i + 1, wheres,columns);
                 }
             } else {
 
                 Helper.each(list, function (i, row) {
                     /**/
                     if (that.is_match(row, wheres)) {
-                        new_list.push(row);
+                        var newObj = {};
+                        Helper.each(columns, function (k,n) {
+                            var _f = n['field'];
+                            if(Helper.isDefined(row[_f])){
+                                newObj[(n['alias']==''?n['field']:n['alias'])] = row[_f];
+                            }
+                        });
+                        new_list.push(newObj);
                     }
                 });
             }
