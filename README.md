@@ -35,3 +35,24 @@ Clone a copy of the main Model git repo by running:
 ```bash
 git clone git://github.com/itwrite/js-model.git
 ```
+How use Model
+----------------------------
+
+Examples:
+
+```bash
+M(response.list)
+.join("STAT_MO",response.list1,'l.STAT_MO','left')
+.fields(['*','ITEM_CD','FREE_DIM_NAM1','CMCC_BRANCH_CD'])//['*','t.STAT_MO as 月份','l.CMCC_BRANCH_CD as id'])
+.where({"CMCC_BRANCH_CD":'201608'})
+.where_between('FREE_DIM_NAM1',[100,23232])
+.where_like('ITEM_CD','07411')
+.where_in("l.FREE_DIM_NAM1",['201608','29304'])
+.where_not_in("l.FREE_DIM_NAM1",['201609','29304'],'or')
+.order_by({"FREE_DIM_NAM1":'desc'})
+.limit(0,10)
+.toSql(true)
+.fetch(function (i,row) {
+     console.log(row['ITEM_CD']);
+})
+```
