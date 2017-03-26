@@ -538,11 +538,7 @@
     Algorithm.extend({
         split_name: function (name, glue) {
             glue = glue ? glue : ' ';
-            /**
-             * 把多个空格的地方替换为一个空格，然后再把左右的空格去掉
-             */
             name = Helper.trim(name.replace(/\s+/g, ' '));
-            //按空格切割，第一个即表名，如果切割后大于1，第二个则为别名，否则表名即为别名
             var arr = name.split(glue);
             name = arr[0];
             return [name, (arr.length > 1 ? arr[1] : name)];
