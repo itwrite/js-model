@@ -1,5 +1,5 @@
 /**
- * Created by zzpzero on 2017/03/26.
+ * Created by zzpzero on 2017/3/27.
  */
 
 (function (global, factory) {
@@ -21,7 +21,8 @@
     } else {
         factory(global);
     }
-}(typeof window !== "undefined" ? window : this, function (window, noGlobal) {
+}(typeof window !== "undefined" ? window : this, function (window, noGlobal)
+{
     var _debug = false,
         __time = null,
         __data = [],
@@ -114,7 +115,7 @@
     };
 
     var Log = function () {
-        if (_debug) {
+        if (_debug==true) {
             var time = (new Date()).getTime();
             var arr = ["echo[" + (time - __time) + "]:"];
             for (var i in arguments) {
@@ -227,7 +228,18 @@
             });
             return str;
         };
+        this.isLike = function (val, arr) {
+            var bok = false;
+            Helper.each(arr, function (n, s) {
+                if(s!=='' && String(val).indexOf(s) > -1){
+                    bok = true;
+                    return false;
+                }
+            });
+            return bok;
+        };
         this.isMatch = function (params) {
+            var that = this;
             var bool = false;
             Helper.each(this.getConditionArr(), function (i, cond) {
                 var j_bok = false;
@@ -271,7 +283,8 @@
                                 break;
                             case 'like':
                                 value = String(value).replace(escaper, escapeChar);
-                                j_bok = String(params[field]).indexOf(value) > -1;
+                                var arr = value.split('%');
+                                j_bok = that.isLike(params[field],arr);
                                 break;
                             default :
                                 j_bok = false;
@@ -884,6 +897,10 @@
             that.clear();
             that.table(data);
             __time = (new Date()).getTime();
+            return this;
+        },
+        debug: function (debug){
+            _debug = debug;
             return this;
         }
     };
