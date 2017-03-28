@@ -1,5 +1,5 @@
 /**
- * Created by zzpzero on 2017/3/27.
+ * Created by zzpzero on 2017/3/28.
  */
 
 (function (global, factory) {
@@ -32,6 +32,21 @@
         __booleans_map = {and: '&&', or: '||'},
         __join_types = ['left', 'right', 'inner'],
         __booleans_or_arr = ['||', '|', 'or'];
+
+    var version = "1.0.1",
+
+    // Support: Android<4.1, IE<9
+    // Make sure we trim BOM and NBSP
+        r_trim = /^[\s\uFEFF\xA0]+|[\s\uFEFF\xA0]+$/g,
+        escaper = /\\|'|\r|\n|\u2028|\u2029/g,
+
+    // Define a local copy of Model
+        Model = function (data) {
+            // The Model object is actually just the init constructor 'enhanced'
+            // Need init if Model is called (just allow error to be thrown if not included)
+            return new Model.fn.init(data);
+        };
+
     // Certain characters need to be escaped so that they can be put into a
     // string literal.
     var escapes = {
@@ -43,59 +58,9 @@
         '\u2029': 'u2029'
     };
 
-    var escaper = /\\|'|\r|\n|\u2028|\u2029/g;
-
     var escapeChar = function (match) {
         return '\\' + escapes[match];
     };
-    var __options = {
-        expressions: [
-            //{
-            //    name: "总数",
-            //    alias: "",
-            //    fx: function (lst) {
-            //        return lst.length;
-            //    }
-            //}
-        ],
-        calculations: {
-            //"ITEM_CD": {
-            //    name: "合计",
-            //    fx: function (lst,t) {
-            //        return this.sum(t,lst);
-            //    }
-            //},
-            //"FREE_DIM_NAM1": {
-            //    name: "合计",
-            //    fx: function (lst,t) {
-            //        return this.sum(t,lst);
-            //    }
-            //}
-        },
-        sorts: {
-            //"STAT_MO": {
-            //    reverse: 1,
-            //    fx: function (lst) {
-            //        return lst.length
-            //    }
-            //}
-        },
-        success: null
-    };
-
-    var version = "1.0.1",
-
-    // Support: Android<4.1, IE<9
-    // Make sure we trim BOM and NBSP
-        r_trim = /^[\s\uFEFF\xA0]+|[\s\uFEFF\xA0]+$/g,
-
-    // Define a local copy of Model
-        Model = function (data) {
-            // The Model object is actually just the init constructor 'enhanced'
-            // Need init if Model is called (just allow error to be thrown if not included)
-            return new Model.fn.init(data);
-        };
-
     var Vendor = {
         get data() {
             return __data;
@@ -209,7 +174,7 @@
             Helper.each(this.getConditionArr(), function (i, cond) {
                 var strArr = [];
                 if (parseInt(i) > 0) {
-                    str += ' ' + cond['boolean'] + ' ';
+                    str += Helper.inArray(cond['boolean'],__booleans_or_arr,0)?' OR ':' AND ';
                 }
                 if (cond instanceof WhereObj) {
                     str += "(" + cond.queryString(params) + ")";
@@ -624,109 +589,6 @@
             });
             return groups;
         },
-        qv_filter: function (list, columns, col_index, sorts_arr) {
-            col_index = col_index ? col_index : 0;
-            var that = this, new_list = [];
-            if (columns.length > 0 && col_index < columns.length - 1) {
-                /**
-                 * 把第一个取出来
-                 * @type {T|*}
-                 */
-                var column = columns[col_index];
-                var field = column['field'];
-                var alias = column['alias'];
-                /**
-                 * 先分组
-                 */
-                var keys = [];
-                var groups = that.groups(list, field, function (key) {
-                    keys.push(key);
-                });
-
-                if (keys.length > 0) {
-                    /**
-                     * 排序
-                     */
-                    var sort = that.get_sort(sorts_arr, field);
-                    //Log("sort",sort);
-                    if (sort !== false) {
-                        var order = sort['rudder'];
-                        var reverse = !1;
-                        if (Helper.isObject(order)) {
-                            if (Helper.isDefined(order['reverse'])) {
-                                reverse = that.convert_reverse(order['reverse']);
-                            }
-                        } else {
-                            reverse = that.convert_reverse(order);
-                        }
-
-                        if (Helper.isDefined(order['fx'])) {
-                            keys = keys.sort(function (a, b) {
-                                var A = parseFloat(order['fx'].call(Vendor, groups[a])), B = parseFloat(order['fx'].call(Vendor, groups[b]));
-                                return (A < B ? -1 : 1) * [1, -1][+!!reverse];
-                            });
-                        } else {
-                            keys = keys.sort(function (a, b) {
-                                return compareFunc(a, b) * [1, -1][+!!reverse];
-                            });
-                            //Log(keys);
-                        }
-                    }
-
-                    /**
-                     * 遍历输出
-                     */
-                    Helper.each(keys, function (i, k) {
-                        var lst = groups[k];
-                        /**
-                         * 如果还有维度，则继续深度排取
-                         */
-
-                        var _lst = that.qv_filter(lst, columns, col_index + 1, sorts_arr);
-
-                        if (Helper.isDefined(__options.calculations[field])) {
-                            var calculation = __options.calculations[field];
-                            var temp = Helper.isArray(_lst[0]) ? _lst[0] : _lst[0].data;
-                            var total_obj = {data: []};
-                            Helper.each(temp, function (t, m) {
-                                if (t < col_index) {
-                                    total_obj.data[t] = m;
-                                } else if (t == col_index) {
-                                    total_obj.data[t] = calculation['name'];
-                                } else if (t > columns.length - 1) {
-                                    total_obj.data[t] = Helper.isFunction(calculation['fx']) ? calculation['fx'].call(Vendor, _lst, t) : '';//Vendor.sum(t, _lst);
-                                } else {
-                                    total_obj.data[t] = '';
-                                }
-                            });
-                            new_list.push(total_obj);
-                        }
-                        Helper.each(_lst, function (j, row) {
-                            new_list.push(row);
-                        });
-
-                    });
-                } else {
-                    return that.qv_filter(list, columns, col_index + 1, sorts_arr);
-                }
-            } else {
-                //最后一列
-                var _row = [];
-                Helper.each(columns, function (n, m) {
-                    var f = m['field'];
-                    _row.push(list[0][f]);
-                });
-                /**/
-                Helper.each(__options.expressions, function (j, express) {
-                    if (Helper.isDefined(express['fx'])) {
-                        _row.push(express['fx'].apply(Vendor, [list]));
-                    }
-                });
-                /**/
-                new_list.push(_row);
-            }
-            return new_list;
-        },
         /**
          *
          * @param list1
@@ -874,7 +736,7 @@
             Helper.each(wheres, function (i, w_obj) {
                 if (w_obj instanceof WhereObj) {
                     if (sqlArr.length > 0) {
-                        sqlArr.push(w_obj.boolean);
+                        sqlArr.push(Helper.inArray(w_obj.boolean,__booleans_or_arr,0)?' OR ':' AND ');
                     }
                     sqlArr.push(w_obj.queryString(params));
                 }
@@ -940,31 +802,7 @@
             }
             return that;
         },
-        /**
-         * quick view
-         * @param options
-         * @returns {*}
-         */
-        view: function (options) {
-            var that = this;
-            var columns = Algorithm.convert_columns(__data[0], that.bindings['fields']);
-            var headFields = [], list = [];
-            Helper.each(columns, function (i, c) {
-                headFields.push(c['alias'] != '' ? c['alias'] : c['field']);
-            });
-            Helper.each(__options.expressions, function (i, n) {
-                headFields.push(n.name);
-            });
-            __options = Helper.extend({}, __options, options);
 
-            list = Algorithm.qv_filter(__data, columns, 0, that.bindings['order_by']);
-
-            if (Helper.isFunction(__options.success)) {
-                __options.success.apply(that, [list, headFields]);
-            }
-
-            return that;
-        },
         /**
          * set fields
          * @param fields
