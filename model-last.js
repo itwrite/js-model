@@ -1,5 +1,5 @@
 /**
- * Created by zzpzero on 2017/3/28.
+ * Created by zzpzero on 2017/3/27.
  */
 
 (function (global, factory) {
@@ -21,8 +21,7 @@
     } else {
         factory(global);
     }
-}(typeof window !== "undefined" ? window : this, function (window, noGlobal)
-{
+}(typeof window !== "undefined" ? window : this, function (window, noGlobal) {
     var _debug = false,
         __time = null,
         __data = [],
@@ -120,11 +119,28 @@
      * @param boolean
      * @constructor
      */
-    function ConditionObj(key, val, operator, boolean) {
+    function ConditionObj(key, operator, val, boolean) {
+        var _operator,_boolean;
+        Object.defineProperty(this,'boolean',{
+            get: function () {
+                return _boolean;
+            },
+            set: function (boolean) {
+                _boolean = Algorithm.convert_boolean(boolean);
+            }
+        });
+        Object.defineProperty(this,'operator',{
+            get: function () {
+                return _operator;
+            },
+            set: function (operator) {
+                _operator = Algorithm.convert_operator(operator);
+            }
+        });
         this.field = key;
         this.value = val;
-        this.operator = operator;
         this.boolean = boolean;
+        this.operator = operator;
     }
 
     /**
@@ -133,37 +149,35 @@
      * @constructor
      */
     function WhereObj(boolean) {
+        var _boolean,_conditionArr = [];
+        Object.defineProperty(this,'boolean',{
+            get: function () {
+                return _boolean;
+            },
+            set: function (boolean) {
+                _boolean = Algorithm.convert_boolean(boolean);
+            }
+        });
         this.boolean = boolean;
-        var _conditionArr = [];
         this.getConditionArr = function () {
             return _conditionArr;
         };
-        this.addCondition = function (cond) {
-            if (cond instanceof ConditionObj || cond instanceof WhereObj) {
-                _conditionArr.push(cond);
-            } else if (Helper.isString(cond)) {
-                _conditionArr.push(eval(cond));
-            }
-            return this;
-        };
-        this.where = function (key, val, operator, boolean) {
-            boolean = Algorithm.convert_boolean(boolean);
-            operator = Algorithm.convert_operator(operator);
+        this.where = function (key,operator, val, boolean) {
             var that = this;
             if (Helper.isObject(key)) {
                 for (var k in key) {
-                    that.where(k, key[k], operator, val);
+                    that.where(k, '==', key[k], operator);
                 }
             } else if (Helper.isArray(key)) {
                 for (var i in key) {
                     if (Helper.isDefined(key[i]['field']) && Helper.isDefined(key[i]['value'])) {
-                        that.where(key[i]['field'], key[i]['value'], key[i]['operator'], key[i]['boolean']);
+                        that.where(key[i]['field'], key[i]['operator'], key[i]['value'], key[i]['boolean']);
                     }
                 }
             } else if (Helper.isString(key) && String(key).length > 0) {
-                _conditionArr.push(new ConditionObj(key, val, operator, boolean));
+                _conditionArr.push(new ConditionObj(key, operator, val, boolean));
             } else if (Helper.isFunction(key)) {
-                var w_obj = new WhereObj(Algorithm.convert_boolean(val));
+                var w_obj = new WhereObj(operator);
                 _conditionArr.push(w_obj);
                 key.call(w_obj);
             }
@@ -177,7 +191,7 @@
                     str += Helper.inArray(cond['boolean'],__booleans_or_arr,0)?' OR ':' AND ';
                 }
                 if (cond instanceof WhereObj) {
-                    str += "(" + cond.queryString(params) + ")";
+                    str += "( " + cond.queryString(params) + " )";
                 } else if (cond instanceof ConditionObj) {
                     var field = cond['field'];
                     var value = cond['value'];
@@ -192,16 +206,6 @@
                 str += strArr.join(' ');
             });
             return str;
-        };
-        this.isLike = function (val, arr) {
-            var bok = false;
-            Helper.each(arr, function (n, s) {
-                if(s!=='' && String(val).indexOf(s) > -1){
-                    bok = true;
-                    return false;
-                }
-            });
-            return bok;
         };
         this.isMatch = function (params) {
             var that = this;
@@ -220,13 +224,17 @@
                         switch (cond['operator']) {
                             case '=':
                             case '==':
-                            case '===':
                                 j_bok = params[field] == value;
                                 break;
-                            case '<>':
+                            case '===':
+                                j_bok = params[field] === value;
+                                break;
                             case '!=':
-                            case '!==':
                                 j_bok = params[field] != value;
+                                break;
+                            case '<>':
+                            case '!==':
+                                j_bok = params[field] !== value;
                                 break;
                             case '<':
                                 j_bok = params[field] < value;
@@ -247,9 +255,17 @@
                                 j_bok = params[field] << value;
                                 break;
                             case 'like':
-                                value = String(value).replace(escaper, escapeChar);
-                                var arr = value.split('%');
-                                j_bok = that.isLike(params[field],arr);
+                                var isLike = function (val, arr) {
+                                    var bok = false;
+                                    Helper.each(arr, function (n, s) {
+                                        if(s!=='' && String(val).indexOf(s) > -1){
+                                            bok = true;
+                                            return false;
+                                        }
+                                    });
+                                    return bok;
+                                };
+                                j_bok = isLike(params[field],String(value).replace(escaper, escapeChar).split('%'));
                                 break;
                             default :
                                 j_bok = false;
@@ -516,11 +532,7 @@
     Algorithm.extend({
         split_name: function (name, glue) {
             glue = glue ? glue : ' ';
-            /**
-             * 把多个空格的地方替换为一个空格，然后再把左右的空格去掉
-             */
             name = Helper.trim(name.replace(/\s+/g, ' '));
-            //按空格切割，第一个即表名，如果切割后大于1，第二个则为别名，否则表名即为别名
             var arr = name.split(glue);
             name = arr[0];
             return [name, (arr.length > 1 ? arr[1] : name)];
@@ -621,36 +633,29 @@
             return result;
         },
         /**
-         *
+         * order by and get data
          * @param list
          * @param order_by_arr
          * @param order_by_i
          * @param wheres
+         * @param columns
          * @returns {*}
          */
         order_by: function (list, order_by_arr, order_by_i, wheres,columns) {
             order_by_i = order_by_i ? order_by_i : 0;
             var that = this, new_list = [];
             if (order_by_arr.length > 0 && order_by_i < order_by_arr.length) {
-                /**
-                 * 把第一个取出来
-                 * @type {T|*}
-                 */
                 var sort = order_by_arr[order_by_i];
                 var field = sort['field'];
-                //var reverse = that.convert_reverse(sort['rudder']);
-                /**
-                 * 先分组
-                 */
+
                 var keys = [];
                 var groups = that.groups(list, field, function (key) {
                     keys.push(key);
                 });
 
-
                 if (keys.length > 0) {
                     /**
-                     * 排序
+                     * sort
                      */
                     var order = sort['rudder'];
                     var reverse = !1;
@@ -688,7 +693,6 @@
                     return that.order_by(list, order_by_arr, order_by_i + 1, wheres,columns);
                 }
             } else {
-
                 Helper.each(list, function (i, row) {
                     /**/
                     if (that.is_match(row, wheres)) {
@@ -705,16 +709,6 @@
             }
             return new_list;
         },
-        get_sort: function (sorts, field) {
-            var bok = false;
-            Helper.each(sorts, function (i, sort) {
-                if (sort['field'] == field) {
-                    bok = sort;
-                    return false;
-                }
-            });
-            return bok;
-        },
         is_match: function (params, wheres) {
             var that = this, bool = true, n = 0;
             Helper.each(wheres, function (i, w_obj) {
@@ -730,18 +724,6 @@
                 }
             });
             return bool;
-        },
-        get_sql: function (params, wheres) {
-            var sqlArr = [];
-            Helper.each(wheres, function (i, w_obj) {
-                if (w_obj instanceof WhereObj) {
-                    if (sqlArr.length > 0) {
-                        sqlArr.push(Helper.inArray(w_obj.boolean,__booleans_or_arr,0)?' OR ':' AND ');
-                    }
-                    sqlArr.push(w_obj.queryString(params));
-                }
-            });
-            return sqlArr.join(' ');
         }
     });
 
@@ -775,8 +757,7 @@
         clear: function () {
             var that = this;
             that.bindings = {
-                where: [], //condition
-                wheres: [], //condition
+                where: new WhereObj('&&'), //condition
                 fields: [], // select fields
                 limit: [], //paging
                 order_by: [] //sort by
@@ -797,7 +778,7 @@
                 var t_name_arr = Algorithm.split_name(t_name, ' ');
                 t_name = t_name_arr[0];
                 var t_alias = t_name_arr[1];
-                //保存表名
+                //save table name
                 __table_alias_names[t_alias] = t_name;
             }
             return that;
@@ -874,30 +855,9 @@
             }
             return this;
         },
-        where: function (field, val, operator, boolean) {
+        where: function (field,  operator,val, boolean) {
             var that = this;
-            boolean = Algorithm.convert_boolean(boolean);
-            operator = Algorithm.convert_operator(operator);
-            //that.bindings['where'] is an array.
-            if (Helper.isObject(field)) {
-                for (var k in field) {
-                    that.where(k, field[k], operator, Algorithm.convert_boolean(val));
-                }
-            } else if (Helper.isArray(field)) {
-                for (var i in field) {
-                    if (Helper.isDefined(field[i]['field']) && Helper.isDefined(field[i]['value'])) {
-                        that.where(field[i]['field'], field[i]['value'], field[i]['operator'], field[i]['boolean']);
-                    }
-                }
-            } else if (Helper.isString(field) && String(field).length > 0) {
-                that.bindings['where'].push((new WhereObj(boolean)).where(field, val, operator, boolean));
-            } else if (Helper.isFunction(field)) {
-                var w_obj = new WhereObj(Algorithm.convert_boolean(val));
-                var w_obj2 = new WhereObj(Algorithm.convert_boolean(val));
-                w_obj.addCondition(w_obj2);
-                that.bindings['where'].push(w_obj);
-                field.call(w_obj2);
-            }
+            that.bindings['where'].where(field,  operator,val, boolean);
             return this;
         },
         where_in: function (field, values, boolean) {
@@ -906,7 +866,7 @@
                 that.where(function () {
                     if (Helper.isArray(values)) {
                         for (var k in values) {
-                            this.where(field, values[k], __operators[0], '||');
+                            this.where(field, __operators[0], values[k], __booleans_or_arr[0]);
                         }
                     }
                 }, boolean);
@@ -919,7 +879,7 @@
                 that.where(function () {
                     if (Helper.isArray(values)) {
                         for (var k in values) {
-                            this.where(field, values[k], '!=');
+                            this.where(field, '!=', values[k], __operators[0]);
                         }
                     }
                 }, boolean);
@@ -930,8 +890,8 @@
             var that = this;
             if (Helper.isArray(range) && range.length > 1) {
                 that.where(function () {
-                    this.where(field, Math.min(range[0], range[1]), '>');
-                    this.where(field, Math.max(range[0], range[1]), '<');
+                    this.where(field, '>>', Math.min(range[0], range[1]));
+                    this.where(field, '<<', Math.max(range[0], range[1]));
                 });
             }
             return this;
@@ -952,11 +912,11 @@
         },
         get: function () {
             var that = this;
-            var list = Algorithm.order_by(__data, that.bindings['order_by'], 0, that.bindings['where']);
+            var list = Algorithm.order_by(__data, that.bindings['order_by'], 0, [that.bindings['where']],Algorithm.convert_columns(__data[0],that.bindings['fields']));
             if (that.bindings['limit'].length > 0) {
                 list = list.slice(that.bindings['limit'][0], that.bindings['limit'][1]);
             }
-            //that.clear();
+            that.clear();
             console.log(list)
             return list;
         },
@@ -980,7 +940,7 @@
             return this.get().length;
         },
         toSql: function (bool) {
-            var sql = Algorithm.get_sql(__data[0], this.bindings['where']);
+            var sql = this.bindings['where'].queryString(__data[0]);
             if (bool == true) {
                 console.log(sql);
                 return this;
