@@ -57,9 +57,19 @@
         '\u2029': 'u2029'
     };
 
+    /**
+     *
+     * @param match
+     * @returns {string}
+     */
     var escapeChar = function (match) {
         return '\\' + escapes[match];
     };
+
+    /**
+     *
+     * @type {{data, each: Function, sum: Function}}
+     */
     var Vendor = {
         get data() {
             return __data;
@@ -81,7 +91,7 @@
     var Log = function () {
         if (_debug==true) {
             var time = (new Date()).getTime();
-            var arr = ["echo[" + (time - __time) + "]:"];
+            var arr = ["echo[" + (time - __time)/1000 + "s]:"];
             for (var i in arguments) {
                 arr.push(arguments[i]);
             }
@@ -89,6 +99,12 @@
         }
     };
 
+    /**
+     *
+     * @param param1
+     * @param param2
+     * @returns {*}
+     */
     function compareFunc(param1, param2) {
         //if both are strings
         if (typeof param1 == "string" && typeof param2 == "string") {
@@ -188,7 +204,7 @@
             Helper.each(this.getConditionArr(), function (i, cond) {
                 var strArr = [];
                 if (parseInt(i) > 0) {
-                    str += Helper.inArray(cond['boolean'],__booleans_or_arr,0)?' OR ':' AND ';
+                    str += Helper.inArray(cond['boolean'],__booleans_or_arr,0)!=-1?' OR ':' AND ';
                 }
                 if (cond instanceof WhereObj) {
                     str += "( " + cond.queryString(params) + " )";
@@ -209,7 +225,7 @@
         };
         this.isMatch = function (params) {
             var that = this;
-            var bool = false;
+            var bool = true;
             Helper.each(this.getConditionArr(), function (i, cond) {
                 var j_bok = false;
                 if (cond instanceof WhereObj) {
@@ -237,22 +253,18 @@
                                 j_bok = params[field] !== value;
                                 break;
                             case '<':
+                            case '<<':
                                 j_bok = params[field] < value;
                                 break;
                             case '<=':
                                 j_bok = params[field] <= value;
                                 break;
                             case '>':
+                            case '>>':
                                 j_bok = params[field] > value;
                                 break;
                             case '>=':
                                 j_bok = params[field] >= value;
-                                break;
-                            case '>>':
-                                j_bok = params[field] >> value;
-                                break;
-                            case '<<':
-                                j_bok = params[field] << value;
                                 break;
                             case 'like':
                                 var isLike = function (val, arr) {
@@ -276,8 +288,7 @@
                 }
                 if (i == 0) {
                     bool = j_bok;
-                }
-                if (Helper.inArray(cond['boolean'], __booleans_or_arr, 0) != -1) {
+                }else if (Helper.inArray(cond['boolean'], __booleans_or_arr, 0) != -1) {
                     bool = bool || j_bok;
                 } else if (i > 0) {
                     bool = bool && j_bok;
@@ -583,24 +594,7 @@
             //Log(columns);
             return columns;
         },
-        groups: function (list, field, key_callback) {
-            var groups = {};
-            var keys = [];
-            Helper.each(list, function (i, row) {
-                if (Helper.isDefined(row[field])) {
-                    var key = row[field];
-                    if (!Helper.isDefined(groups[key])) {
-                        keys.push(key);
-                        groups[key] = [];
-                        if (Helper.isFunction(key_callback)) {
-                            key_callback.call(row, key);
-                        }
-                    }
-                    groups[key].push(row);
-                }
-            });
-            return groups;
-        },
+
         /**
          *
          * @param list1
@@ -633,25 +627,71 @@
             return result;
         },
         /**
+         *
+         * @param list
+         * @param field
+         * @returns {{}}
+         */
+        groups: function (list, field) {
+            var groups = {};
+            Helper.each(list, function (i, row) {
+                var key = row[field];
+                if (Helper.isDefined(key)) {
+                    if (!Helper.isDefined(groups[key])) {
+                        groups[key] = [];
+                    }
+                    groups[key].push(row);
+                }
+            });
+            return groups;
+        },
+        /**
          * order by and get data
          * @param list
          * @param order_by_arr
          * @param order_by_i
-         * @param wheres
          * @param columns
+         * @param filter_callback
          * @returns {*}
          */
-        order_by: function (list, order_by_arr, order_by_i, wheres,columns) {
-            order_by_i = order_by_i ? order_by_i : 0;
+        order_by: function (list, order_by_arr, order_by_i,columns,filter_callback) {
+            order_by_i = order_by_i>0 ? order_by_i : 0;
             var that = this, new_list = [];
+            //需要排序
             if (order_by_arr.length > 0 && order_by_i < order_by_arr.length) {
                 var sort = order_by_arr[order_by_i];
                 var field = sort['field'];
 
+                /**
+                 * 如果有order by，则在第一次遍历分组时做筛选，过滤之后的再度排序则可不用作判断了
+                 * 先做where筛选，然后order by;
+                 */
+                var groups = {};
                 var keys = [];
-                var groups = that.groups(list, field, function (key) {
-                    keys.push(key);
-                });
+                if(Helper.isFunction(filter_callback)){
+                    Helper.each(list, function (i, row) {
+                        var key = row[field];
+                        if (Helper.isDefined(key)&&filter_callback.call(row,row,i)===true){
+                            if (!Helper.isDefined(groups[key])) {
+                                keys.push(key);
+                                groups[key] = [];
+                            }
+                            groups[key].push(row);
+                        }
+                    });
+                }else{
+                    Helper.each(list, function (i, row) {
+                        var key = row[field];
+                        if (Helper.isDefined(key)) {
+                            if (!Helper.isDefined(groups[key])) {
+                                keys.push(key);
+                                groups[key] = [];
+                            }
+                            groups[key].push(row);
+                        }
+                    });
+                }
+
 
                 if (keys.length > 0) {
                     /**
@@ -676,7 +716,6 @@
                         keys = keys.sort(function (a, b) {
                             return compareFunc(a, b) * [1, -1][+!!reverse];
                         });
-                        //Log(keys);
                     }
 
                     /**
@@ -684,46 +723,39 @@
                      */
                     Helper.each(keys, function (i, k) {
                         var lst = groups[k];
-                        var _lst = that.order_by(lst, order_by_arr, order_by_i + 1, wheres,columns);
-                        Helper.each(_lst, function (j, row) {
-                            new_list.push(row);
-                        });
+                        if(order_by_i<order_by_arr.length-1){
+                            lst = that.order_by(lst, order_by_arr, order_by_i + 1,columns);
+                            Helper.each(lst, function (j, row) {
+                                new_list.push(row);
+                            });
+                        }else{
+                            Helper.each(lst, function (i, row) {
+                                new_list.push(that.get_row_data(row,columns));
+                            });
+                        }
                     });
                 } else {
-                    return that.order_by(list, order_by_arr, order_by_i + 1, wheres,columns);
+                    return that.order_by(list, order_by_arr, order_by_i + 1, columns);
                 }
-            } else {
-                Helper.each(list, function (i, row) {
-                    /**/
-                    if (that.is_match(row, wheres)) {
-                        var newObj = {};
-                        Helper.each(columns, function (k,n) {
-                            var _f = n['field'];
-                            if(Helper.isDefined(row[_f])){
-                                newObj[(n['alias']==''?n['field']:n['alias'])] = row[_f];
-                            }
-                        });
-                        new_list.push(newObj);
-                    }
-                });
             }
             return new_list;
         },
-        is_match: function (params, wheres) {
-            var that = this, bool = true, n = 0;
-            Helper.each(wheres, function (i, w_obj) {
-                if (w_obj instanceof WhereObj) {
-                    if (n == 0) {
-                        bool = w_obj.isMatch(params);
-                    } else if (Helper.inArray(w_obj['boolean'], __booleans_or_arr, 0) != -1) {
-                        bool = bool || w_obj.isMatch(params);
-                    } else {
-                        bool = bool && w_obj.isMatch(params);
-                    }
-                    n++;
+        /**
+         *
+         * @param row
+         * @param columns
+         * @returns {{}}
+         */
+        get_row_data: function (row,columns) {
+            /**/
+            var new_row = {};
+            Helper.each(columns, function (k,n) {
+                var _f = n['field'];
+                if(Helper.isDefined(row[_f])){
+                    new_row[(n['alias']==''?n['field']:n['alias'])] = row[_f];
                 }
             });
-            return bool;
+            return new_row;
         }
     });
 
@@ -757,7 +789,7 @@
         clear: function () {
             var that = this;
             that.bindings = {
-                where: new WhereObj('&&'), //condition
+                where:new WhereObj('&&'), //condition
                 fields: [], // select fields
                 limit: [], //paging
                 order_by: [] //sort by
@@ -815,23 +847,23 @@
             var t2_arr = Algorithm.split_name(key2, '.');
             var t2_alias = t2_arr[0];
             key2 = t2_arr[1];
-            var get_new_row = function (one, second, is_matched) {
+            var get_new_row = function (one, second, is_both) {
                 var obj = {};
                 for (var lf in one) {
                     obj[lf] = one[lf];
                 }
                 for (var rf in second) {
-                    obj[t2_alias + '.' + rf] = (is_matched == true ? second[rf] : null);
+                    obj[t2_alias + '.' + rf] = (is_both == true ? second[rf] : null);
                 }
                 return obj;
             };
 
-            if (join_type == 'right') {
+            if (join_type == 'right'||(join_type == 'inner'&&__data.length>list2.length)) {
                 __data = Algorithm.join(list2, key2, __data, key1, join_type, get_new_row);
-            } else {
+            }else {
                 __data = Algorithm.join(__data, key1, list2, key2, join_type, get_new_row);
             }
-            Log("__data.length", __data.length);
+            Log("end of join,data.length:", __data.length);
             return that;
         },
         /**
@@ -855,11 +887,26 @@
             }
             return this;
         },
+        /**
+         *
+         * @param field
+         * @param operator
+         * @param val
+         * @param boolean
+         * @returns {*}
+         */
         where: function (field,  operator,val, boolean) {
             var that = this;
             that.bindings['where'].where(field,  operator,val, boolean);
             return this;
         },
+        /**
+         *
+         * @param field
+         * @param values
+         * @param boolean
+         * @returns {*}
+         */
         where_in: function (field, values, boolean) {
             var that = this;
             if (Helper.isString(field)) {
@@ -873,6 +920,13 @@
             }
             return this;
         },
+        /**
+         *
+         * @param field
+         * @param values
+         * @param boolean
+         * @returns {*}
+         */
         where_not_in: function (field, values, boolean) {
             var that = this;
             if (Helper.isString(field)) {
@@ -886,21 +940,41 @@
             }
             return this;
         },
-        where_between: function (field, range) {
+        /**
+         *
+         * @param field
+         * @param range
+         * @param boolean
+         * @returns {*}
+         */
+        where_between: function (field, range,boolean) {
             var that = this;
             if (Helper.isArray(range) && range.length > 1) {
                 that.where(function () {
-                    this.where(field, '>>', Math.min(range[0], range[1]));
-                    this.where(field, '<<', Math.max(range[0], range[1]));
-                });
+                    this.where(field, '>', Math.min(range[0], range[1]));
+                    this.where(field, '<', Math.max(range[0], range[1]));
+                },boolean);
             }
             return this;
         },
+        /**
+         *
+         * @param field
+         * @param val
+         * @param boolean
+         * @returns {*}
+         */
         where_like: function (field, val, boolean) {
             var that = this;
             that.where(field, val, 'like', boolean);
             return that;
         },
+        /**
+         *
+         * @param offset
+         * @param size
+         * @returns {*}
+         */
         limit: function (offset, size) {
             var that = this;
             if (arguments.length == 1) {
@@ -910,14 +984,41 @@
             }
             return this;
         },
+        /**
+         *
+         * @returns {Array}
+         */
         get: function () {
             var that = this;
-            var list = Algorithm.order_by(__data, that.bindings['order_by'], 0, [that.bindings['where']],Algorithm.convert_columns(__data[0],that.bindings['fields']));
-            if (that.bindings['limit'].length > 0) {
-                list = list.slice(that.bindings['limit'][0], that.bindings['limit'][1]);
+            var  list = [];
+            var columns = Algorithm.convert_columns(__data[0],that.bindings['fields']);
+            /**
+             * 如果不需要排序,则遍历一次直接筛选 出结果
+             */
+            if(that.bindings['order_by'].length<1){
+                Helper.each(__data, function (i, row) {
+                    if(that.bindings['where'].isMatch(row)){
+                        list.push(Algorithm.get_row_data(row,columns));
+                    }
+                });
             }
+            /**
+             * 需要排序的情况
+             */
+            else{
+                list = Algorithm.order_by(__data, that.bindings['order_by'], 0,columns, function (row,i) {
+                   return that.bindings['where'].isMatch(row)&&true;
+                });
+            }
+            /**
+             * 如果有分页
+             */
+            if (that.bindings['limit'].length > 0) {
+                list = list.slice(that.bindings['limit'][0], Math.min(that.bindings['limit'][1],list.length));
+            }
+            Log("List--",list);
+            Log("SQL--",this.toSql());
             that.clear();
-            console.log(list)
             return list;
         },
         find: function (where) {
@@ -939,13 +1040,8 @@
         count: function () {
             return this.get().length;
         },
-        toSql: function (bool) {
-            var sql = this.bindings['where'].queryString(__data[0]);
-            if (bool == true) {
-                console.log(sql);
-                return this;
-            }
-            return sql;
+        toSql: function () {
+            return this.bindings['where'].queryString(__data[0]);
         }
     });
 
