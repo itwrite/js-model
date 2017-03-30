@@ -41,18 +41,18 @@ How use Model
 Examples:
 
 ```bash
-M(response.list1)
-.join("STAT_MO",list2,'l.STAT_MO','left')
-.fields(['*','ITEM_CD','l.FREE_DIM_NAM1','CMCC_BRANCH_CD'])//['*','t.STAT_MO as 月份','l.CMCC_BRANCH_CD as id'])
-.where({"CMCC_BRANCH_CD":'201608'})
-.where_between('FREE_DIM_NAM1',[100,23232])
-.where_like('ITEM_CD','07411')
+M(response.list)
+.debug(true)
+.join("STAT_MO",response.list1,'l.STAT_MO')
+.fields(["*",'ITEM_CD as id','FREE_DIM_NAM1 as 名称1','CMCC_BRANCH_CD'])
+.where({"CMCC_BRANCH_CD":"GD"})
+.where_between('l.FREE_DIM_NAM1',[100,23232])
+.where_like('ITEM_CD','G')
 .where_in("l.FREE_DIM_NAM1",['201608','29304'])
 .where_not_in("l.FREE_DIM_NAM1",['201609','29304'],'or')
-.order_by({"FREE_DIM_NAM1":'desc'})
+.order_by({"ITEM_CD":'desc',"STAT_MO":1})
 .limit(0,10)
-//.toSql(true) //if true,then return M and console.log(sql);others return `sql`,just use to make sure your logic is right
 .fetch(function (i,row) {
-     console.log(row['ITEM_CD']);
+        console.log(row['ITEM_CD']);
 });//Here you can give it a callback Function, then it will be call when foreach very item of result;
 ```
