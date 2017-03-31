@@ -1,5 +1,5 @@
 /**
- * Created by zzpzero on 2017/3/27.
+ * Created by zzpzero on 2017/3/31.
  */
 
 (function (global, factory) {
@@ -166,6 +166,7 @@
      */
     function WhereObj(boolean) {
         var _boolean,_conditionArr = [];
+        this.condition = _conditionArr;
         Object.defineProperty(this,'boolean',{
             get: function () {
                 return _boolean;
@@ -199,99 +200,117 @@
             }
             return this;
         };
-        this.queryString = function (params) {
-            var str = '';
-            Helper.each(this.getConditionArr(), function (i, cond) {
-                var strArr = [];
-                if (parseInt(i) > 0) {
-                    str += Helper.inArray(cond['boolean'],__booleans_or_arr,0)!=-1?' OR ':' AND ';
+
+        var parseSql = function (params, cond,showValue) {
+            showValue = showValue==true;
+            var strArr = [];
+            if (cond instanceof WhereObj) {
+                strArr.push("( " + cond.queryString(params) + " )");
+            } else if (cond instanceof ConditionObj) {
+                var field = cond['field'];
+                var value = cond['value'];
+                if (Helper.isDefined(params[field])) {
+                    strArr.push(Helper.isNumber(params[field]) ?  (showValue?params[field]:"{" +field+ "}") :  (showValue?params[field]:"'{" +field+ "}'") );
+                    strArr.push(cond['operator']);
+                    strArr.push(Helper.isNumber(cond['value']) ? cond['value'] : "'" + (cond['operator'] == 'like' ? "%" + String(cond['value']) + "%" : String(cond['value'])) + "'");
+                } else {
+                    strArr.push("false");
                 }
-                if (cond instanceof WhereObj) {
-                    str += "( " + cond.queryString(params) + " )";
-                } else if (cond instanceof ConditionObj) {
-                    var field = cond['field'];
-                    var value = cond['value'];
-                    if (Helper.isDefined(params[field])) {
-                        strArr.push(Helper.isNumber(params[field]) ? "{" + field + "}" : "'{" + field + "}'");
-                        strArr.push(cond['operator']);
-                        strArr.push(Helper.isNumber(cond['value']) ? cond['value'] : "'" + (cond['operator'] == 'like' ? "%" + String(cond['value']) + "%" : String(cond['value'])) + "'");
-                    } else {
-                        strArr.push("false");
+            }
+            return strArr.join(' ');
+        };
+
+        this.queryString = function (params,showValue) {
+            var strArr = [];
+            Helper.each(this.getConditionArr(), function (i, cond) {
+                if (parseInt(i) > 0) {
+                    strArr.push(Helper.inArray(cond['boolean'],__booleans_or_arr,0)!=-1?' OR ':' AND ');
+                }
+                strArr.push(parseSql(params,cond,showValue));
+            });
+            return strArr.join(' ');
+        };
+
+
+        var parseCondition = function (params, cond) {
+            if(cond instanceof WhereObj){
+                return cond.isMatch(params);
+            }else if(cond instanceof ConditionObj){
+                var field = cond['field'];
+                var value = cond['value'];
+                var j_bok = false;
+                if(Helper.isDefined(params[field])){
+                    switch (cond['operator']) {
+                        case '=':
+                        case '==':
+                            j_bok = params[field] == value;
+                            break;
+                        case '===':
+                            j_bok = params[field] === value;
+                            break;
+                        case '!=':
+                            j_bok = params[field] != value;
+                            break;
+                        case '<>':
+                        case '!==':
+                            j_bok = params[field] !== value;
+                            break;
+                        case '<':
+                        case '<<':
+                            j_bok = params[field] < value;
+                            break;
+                        case '<=':
+                            j_bok = params[field] <= value;
+                            break;
+                        case '>':
+                        case '>>':
+                            j_bok = params[field] > value;
+                            break;
+                        case '>=':
+                            j_bok = params[field] >= value;
+                            break;
+                        case 'like':
+                            var isLike = function (val, arr) {
+                                var bok = false;
+                                Helper.each(arr, function (n, s) {
+                                    if(s!=='' && String(val).indexOf(s) > -1){
+                                        bok = true;
+                                        return false;
+                                    }
+                                });
+                                return bok;
+                            };
+                            j_bok = isLike(params[field],String(value).replace(escaper, escapeChar).split('%'));
+                            break;
+                        default :
+                            j_bok = false;
                     }
                 }
-                str += strArr.join(' ');
-            });
-            return str;
+                return j_bok;
+            }
+            return Helper.isBoolean(cond)?cond:false;
         };
         this.isMatch = function (params) {
             var that = this;
-            var bool = true;
-            Helper.each(this.getConditionArr(), function (i, cond) {
-                var j_bok = false;
-                if (cond instanceof WhereObj) {
-                    j_bok = cond.isMatch(params);
-                    //Log("WhereObj",i,j_bok);
-                } else if (cond instanceof ConditionObj) {
 
-                    var field = cond['field'];
-                    var value = cond['value'];
-                    if (Helper.isDefined(params[field])) {
-                        // ['=','==', '===', '!=', '<', '>', '<=', '>=', '<>', '<<', '>>'];
-                        switch (cond['operator']) {
-                            case '=':
-                            case '==':
-                                j_bok = params[field] == value;
-                                break;
-                            case '===':
-                                j_bok = params[field] === value;
-                                break;
-                            case '!=':
-                                j_bok = params[field] != value;
-                                break;
-                            case '<>':
-                            case '!==':
-                                j_bok = params[field] !== value;
-                                break;
-                            case '<':
-                            case '<<':
-                                j_bok = params[field] < value;
-                                break;
-                            case '<=':
-                                j_bok = params[field] <= value;
-                                break;
-                            case '>':
-                            case '>>':
-                                j_bok = params[field] > value;
-                                break;
-                            case '>=':
-                                j_bok = params[field] >= value;
-                                break;
-                            case 'like':
-                                var isLike = function (val, arr) {
-                                    var bok = false;
-                                    Helper.each(arr, function (n, s) {
-                                        if(s!=='' && String(val).indexOf(s) > -1){
-                                            bok = true;
-                                            return false;
-                                        }
-                                    });
-                                    return bok;
-                                };
-                                j_bok = isLike(params[field],String(value).replace(escaper, escapeChar).split('%'));
-                                break;
-                            default :
-                                j_bok = false;
-                        }
+
+            var conditions = this.getConditionArr();
+            //如果condition为空，则反回true
+            if(conditions.length==0){
+                return true;
+            }
+            //var firstCond = conditions[0];
+            var bool = false;
+            Helper.each(conditions, function (i, cond) {
+                if(parseInt(i)>0){
+                    //if 'or'
+                    if (Helper.inArray(cond['boolean'], __booleans_or_arr, 0) != -1) {
+                        bool = bool || parseCondition(params,cond);
+                    }else{
+                        bool = bool && parseCondition(params,cond);
                     }
-                } else {
-                    j_bok = cond;
-                }
-                if (i == 0) {
-                    bool = j_bok;
-                }else if (Helper.inArray(cond['boolean'], __booleans_or_arr, 0) != -1) {
-                    bool = bool || j_bok;
-                } else if (i > 0) {
-                    bool = bool && j_bok;
+                }else{
+                    bool = parseCondition(params,cond);
                 }
             });
             return bool;
@@ -515,15 +534,6 @@
             }
 
             return obj;
-        },
-        filter: function (obj, callback) {
-            var result = Helper.isArray(obj) ? {} : [];
-            Helper.each(obj, function (i, n) {
-                if (Helper.isFunction()) {
-                    result[i] = callback.call(n, n, i);
-                }
-            });
-            return result;
         }
     };
 
@@ -566,7 +576,7 @@
             var columns = [];
             var _fields = fields;//should be array
             _fields = _fields.length > 0 ? _fields : ['*'];
-            //field filter
+            //field
             var field_count = 0;
             for (var i in _fields) {
                 var field = _fields[i];
@@ -630,14 +640,18 @@
          *
          * @param list
          * @param field
+         * @param callback
          * @returns {{}}
          */
-        groups: function (list, field) {
+        groups: function (list, field ,callback) {
             var groups = {};
             Helper.each(list, function (i, row) {
                 var key = row[field];
                 if (Helper.isDefined(key)) {
                     if (!Helper.isDefined(groups[key])) {
+                        if(Helper.isFunction(callback)){
+                            callback.call(row,key);
+                        }
                         groups[key] = [];
                     }
                     groups[key].push(row);
@@ -645,59 +659,46 @@
             });
             return groups;
         },
+        filter: function (list,callback) {
+            var that= this, new_list = [];
+            if(list.length>0 && Helper.isFunction(callback)){
+                Helper.each(list, function (i, row) {
+                    var new_row = callback.call(row,row,i);
+                   if(new_row!=false && !Helper.isEmptyObject(new_row)){
+                       new_list.push(new_row);
+                   }
+                });
+            }else{
+                return list;
+            }
+            return new_list;
+        },
         /**
-         * order by and get data
+         *
          * @param list
          * @param order_by_arr
          * @param order_by_i
-         * @param columns
-         * @param filter_callback
+         * @param callback
          * @returns {*}
          */
-        order_by: function (list, order_by_arr, order_by_i,columns,filter_callback) {
+        order_by: function (list, order_by_arr, order_by_i,callback) {
             order_by_i = order_by_i>0 ? order_by_i : 0;
             var that = this, new_list = [];
             //需要排序
             if (order_by_arr.length > 0 && order_by_i < order_by_arr.length) {
                 var sort = order_by_arr[order_by_i];
                 var field = sort['field'];
+                var order = sort['rudder'];
 
-                /**
-                 * 如果有order by，则在第一次遍历分组时做筛选，过滤之后的再度排序则可不用作判断了
-                 * 先做where筛选，然后order by;
-                 */
-                var groups = {};
                 var keys = [];
-                if(Helper.isFunction(filter_callback)){
-                    Helper.each(list, function (i, row) {
-                        var key = row[field];
-                        if (Helper.isDefined(key)&&filter_callback.call(row,row,i)===true){
-                            if (!Helper.isDefined(groups[key])) {
-                                keys.push(key);
-                                groups[key] = [];
-                            }
-                            groups[key].push(row);
-                        }
-                    });
-                }else{
-                    Helper.each(list, function (i, row) {
-                        var key = row[field];
-                        if (Helper.isDefined(key)) {
-                            if (!Helper.isDefined(groups[key])) {
-                                keys.push(key);
-                                groups[key] = [];
-                            }
-                            groups[key].push(row);
-                        }
-                    });
-                }
-
+                var groups = that.groups(list,field, function (key) {
+                    keys.push(key);
+                });
 
                 if (keys.length > 0) {
                     /**
                      * sort
                      */
-                    var order = sort['rudder'];
                     var reverse = !1;
                     if (Helper.isObject(order)) {
                         if (Helper.isDefined(order['reverse'])) {
@@ -719,24 +720,26 @@
                     }
 
                     /**
-                     * 遍历输出
+                     * 排好序后遍历输出
                      */
                     Helper.each(keys, function (i, k) {
                         var lst = groups[k];
-                        if(order_by_i<order_by_arr.length-1){
-                            lst = that.order_by(lst, order_by_arr, order_by_i + 1,columns);
-                            Helper.each(lst, function (j, row) {
-                                new_list.push(row);
-                            });
-                        }else{
-                            Helper.each(lst, function (i, row) {
-                                new_list.push(that.get_row_data(row,columns));
-                            });
-                        }
+                        lst = that.order_by(lst, order_by_arr, order_by_i + 1,callback);
+                        Helper.each(lst, function (j, row) {
+                            new_list.push(row);
+                        });
                     });
-                } else {
-                    return that.order_by(list, order_by_arr, order_by_i + 1, columns);
+                }else{
+                    return that.order_by(list, order_by_arr, order_by_i + 1,callback);
                 }
+            }else{
+                Helper.each(list, function (i, row) {
+                    if(Helper.isFunction(callback)){
+                        new_list.push(callback.call(row,row,i));
+                    }else{
+                        new_list.push(row);
+                    }
+                });
             }
             return new_list;
         },
@@ -933,7 +936,7 @@
                 that.where(function () {
                     if (Helper.isArray(values)) {
                         for (var k in values) {
-                            this.where(field, '!=', values[k], __operators[0]);
+                            this.where(field, '!=', values[k], __booleans[0]);
                         }
                     }
                 }, boolean);
@@ -951,8 +954,8 @@
             var that = this;
             if (Helper.isArray(range) && range.length > 1) {
                 that.where(function () {
-                    this.where(field, '>', Math.min(range[0], range[1]));
-                    this.where(field, '<', Math.max(range[0], range[1]));
+                    this.where(field, '>', Math.min(range[0], range[1]),boolean);
+                    this.where(field, '<', Math.max(range[0], range[1]),boolean);
                 },boolean);
             }
             return this;
@@ -966,7 +969,7 @@
          */
         where_like: function (field, val, boolean) {
             var that = this;
-            that.where(field, val, 'like', boolean);
+            that.where(field,'like', val,  boolean);
             return that;
         },
         /**
@@ -991,23 +994,32 @@
         get: function () {
             var that = this;
             var  list = [];
+
+            //Log(__data[0]);
             var columns = Algorithm.convert_columns(__data[0],that.bindings['fields']);
+
             /**
-             * 如果不需要排序,则遍历一次直接筛选 出结果
+             * 如果有where 则筛选。
              */
-            if(that.bindings['order_by'].length<1){
-                Helper.each(__data, function (i, row) {
+            if(that.bindings['where'].getConditionArr().length>0){
+                list = Algorithm.filter(__data, function (row) {
                     if(that.bindings['where'].isMatch(row)){
-                        list.push(Algorithm.get_row_data(row,columns));
+                        return row;
                     }
+                    return false;
                 });
             }
+
             /**
-             * 需要排序的情况
+             * 如果需要排序
              */
-            else{
-                list = Algorithm.order_by(__data, that.bindings['order_by'], 0,columns, function (row,i) {
-                   return that.bindings['where'].isMatch(row)&&true;
+            if(that.bindings['order_by'].length>0){
+                list = Algorithm.order_by(list, that.bindings['order_by'], 0, function (row) {
+                    return Algorithm.get_row_data(row,columns);
+                });
+            }else{
+                list = Algorithm.filter(list, function (row) {
+                    return Algorithm.get_row_data(row,columns);
                 });
             }
             /**
@@ -1028,10 +1040,12 @@
         fetch: function (fetch_fn) {
             var that = this;
             var list = that.get();
+
             if (Helper.isFunction(fetch_fn)) {
                 Helper.each(list, fetch_fn);
                 return that;
             }
+
             return list;
         },
         select: function (fields, where) {
