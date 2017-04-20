@@ -1,4 +1,4 @@
-[Model](https://github.com/itwrite/js-model/) — New Wave JavaScript
+[Model](https://github.com/itwrite/model/) — New Wave JavaScript
 ==================================================
 
 Contribution Guides
@@ -13,27 +13,13 @@ Environments in which to use Model
 - [source](https://github.com/itwrite/js-model/blob/master/model-1.0.1.js)
 
 
-What you need to build your own Model
---------------------------------------
-
-In order to build Model, you need to have the latest Node.js/npm and git 1.7 or later. Earlier versions might work, but are not supported.
-
-For Windows, you have to download and install [git](https://git-scm.com/downloads) and [Node.js](https://nodejs.org/en/download/).
-
-OS X users should install [Homebrew](http://brew.sh/). Once Homebrew is installed, run `brew install git` to install git,
-and `brew install node` to install Node.js.
-
-Linux/BSD users should use their appropriate package managers to install git and Node.js, or build from source
-if you swing that way. Easy-peasy.
-
-
 How to build your own Model
 ----------------------------
 
 Clone a copy of the main Model git repo by running:
 
 ```bash
-git clone git://github.com/itwrite/js-model.git
+git clone git://github.com/itwrite/model.git
 ```
 How use Model
 ----------------------------
@@ -54,5 +40,5 @@ M(response.list)
 .limit(0,10)
 .fetch(function (i,row) {
         console.log(row['ITEM_CD']);
-});//Here you can give it a callback Function, then it will be call when foreach very item of result;
+});//Here if you give it a callback Function, then it will be call when foreach very item of result;
 ```
