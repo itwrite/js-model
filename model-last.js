@@ -23,7 +23,7 @@
     }
 }(typeof window !== "undefined" ? window : this, function (window, noGlobal) {
     var _debug = false,
-        __bindings = [],
+        __bindings = {},
         __time = null,
         __data = [],
         __operators = ['==', '===', '<', '>', '<=', '>=', '<>', '!=', '<<', '>>', 'like'],
