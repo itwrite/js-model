@@ -1,4 +1,4 @@
-[Model](https://github.com/itwrite/model/) — New Wave JavaScript
+[Model](https://github.com/itwrite/model/) — 1.0.2
 ==================================================
 
 Contribution Guides
@@ -10,7 +10,7 @@ In the spirit of open source software development, Model always encourages commu
 Environments in which to use Model
 --------------------------------------
 
-- [source](https://github.com/itwrite/js-model/blob/master/model-1.0.1.js)
+- [source](https://github.com/itwrite/js-model/blob/master/model-last.js)
 
 
 How to build your own Model
