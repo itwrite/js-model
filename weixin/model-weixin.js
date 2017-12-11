@@ -932,6 +932,68 @@ Model.fn = Model.prototype = {
     }
     return this;
   },
+
+  /**
+    * 
+    * @returns {number}
+    */
+  remove: function () {
+    this.where.apply(this, arguments);
+    /**
+     * 如果有where 则筛选。
+     */
+    var effect_rows = 0;
+    if (__bindings['where'].conditions.length > 0) {
+      var list = Algorithm.filter(__data, function (row, i) {
+        if (__bindings['where'].isMatch(row)) {
+          effect_rows++;
+          return false;
+        }
+        return row;
+      });
+      __data.length = 0;
+      Helper.each(list, function (i) {
+        __data.push(this);
+      });
+      return effect_rows;
+    } else {
+      effect_rows = __data.length;
+      __data.length = 0;
+      return effect_rows;
+    }
+
+    return effect_rows;
+  },
+  update: function (data) {
+    if (!Helper.isObject(data)) {
+      return 0;
+    }
+    /**
+     * 如果有where 则筛选。
+     */
+    var effect_rows = 0;
+
+    if (__bindings['where'].conditions.length > 0) {
+      Helper.each(__data, function (i, row) {
+        //匹配上的则更新
+        if (__bindings['where'].isMatch(row)) {
+          effect_rows++;
+          for (var k in data) {
+            __data[i][k] = data[k];
+          }
+        }
+      });
+
+    } else {
+      Helper.each(__data, function (i) {
+        effect_rows++;
+        for (var k in data) {
+          __data[i][k] = data[k];
+        }
+      });
+    }
+    return effect_rows;
+  },
   /**
    *
    * @returns {Array}
@@ -986,7 +1048,6 @@ Model.fn = Model.prototype = {
   fetch: function (fetch_fn) {
     var that = this;
     var list = that.get();
-
     if (Helper.isFunction(fetch_fn)) {
       Log('fetch begin');
       Helper.each(list, fetch_fn);
