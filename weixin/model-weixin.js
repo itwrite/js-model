@@ -835,6 +835,7 @@
       } else {
         __data = Algorithm.join(__data, key1, list2, key2, join_type, get_new_row);
       }
+      Log("__data--", __data);
       Log("end of join,data.length:", __data.length);
       return that;
     },
@@ -962,16 +963,17 @@
      */
     get: function () {
       var that = this;
-      var list = [];
+      var list = __data;
 
       //Log(__data[0]);
       var columns = Algorithm.convert_columns(__data[0], __bindings['fields']);
-
+      Log('columns:', columns);
       /**
        * 如果有where 则筛选。
        */
       if (__bindings['where'].conditions.length > 0) {
-        list = Algorithm.filter(__data, function (row) {
+        //Log('where:', __bindings['where']);
+        list = Algorithm.filter(list, function (row) {
           if (__bindings['where'].isMatch(row)) {
             return row;
           }
@@ -984,17 +986,22 @@
        */
       if (__bindings['order_by'].length > 0) {
         list = Algorithm.order_by(list, __bindings['order_by'], 0, function (row) {
+          Log('order by,row:', row);
           return Algorithm.get_row_data(row, columns);
         });
       } else {
+        
         list = Algorithm.filter(list, function (row) {
+          Log('no order by,row:', row);
           return Algorithm.get_row_data(row, columns);
         });
+        
       }
       /**
        * 如果有分页
        */
       if (__bindings['limit'].length > 0) {
+        Log('limit:', limit);
         list = list.slice(__bindings['limit'][0], Math.min(__bindings['limit'][1], list.length));
       }
       Log("List--", list);
@@ -1108,7 +1115,7 @@
   // to call noConflict to hide this version of Model, it will work.
 
   if (typeof define === "function" && define.amd) {
-    define("Model", [], function () {
+    define("model", [], function () {
       return Model;
     });
   }
