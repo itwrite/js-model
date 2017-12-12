@@ -13,13 +13,10 @@
         module.exports = global.document ?
             factory(global, true) :
             function (w) {
-                if (!w.document) {
-                    throw new Error("Model requires a window with a document");
-                }
                 return factory(w);
             };
     } else {
-        factory(global);
+        return factory(global);
     }
 }(typeof window !== "undefined" ? window : this, function (window, noGlobal) {
     var _debug = false,
@@ -363,7 +360,7 @@
          */
         isWindow: function (obj) {
             /* jshint eqeqeq: false */
-            return obj != null && obj == obj.window;
+            return obj != null && typeof (obj['window'] !='undefined') && obj == obj.window;
         },
 
         /**
@@ -975,7 +972,7 @@
          */
         get: function () {
             var that = this;
-            var list = [];
+            var list = __data;
 
             //Log(__data[0]);
             var columns = Algorithm.convert_columns(__data[0], __bindings['fields']);
@@ -984,7 +981,7 @@
              * 如果有where 则筛选。
              */
             if (__bindings['where'].conditions.length > 0) {
-                list = Algorithm.filter(__data, function (row) {
+                list = Algorithm.filter(list, function (row) {
                     if (__bindings['where'].isMatch(row)) {
                         return row;
                     }
