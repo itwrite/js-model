@@ -27,18 +27,36 @@ How use Model
 Examples:
 
 ```bash
-M(response.list)
+
+var categories = [{ id: 2, name: "cat1" }, { id: 4, name: "cat2" }];
+var goods = [{ id: 1, cid: 2, name: "goods1" }, { id: 2, cid: 4, name: "goods2" }];
+var attrs = [{ id: 1, gid: 1, name: "goods1_attr" }, { id: 2, gid: 2, name: "goods2_attr" }];
+
+Example 1:
+Model(goods)
 .debug(true)
-.join("STAT_MO",response.list1,'l.STAT_MO')
-.fields(["*",'ITEM_CD as id','FREE_DIM_NAM1 as 名称1','CMCC_BRANCH_CD'])
-.where({"CMCC_BRANCH_CD":"GD"})
-.where_between('l.FREE_DIM_NAM1',[100,23232])
-.where_like('ITEM_CD','G')
-.where_in("l.FREE_DIM_NAM1",['201608','29304'])
-.where_not_in("l.FREE_DIM_NAM1",['201609','29304'],'or')
-.order_by({"ITEM_CD":'desc',"STAT_MO":1})
-.limit(0,10)
-.fetch(function (i,row) {
-        console.log(row['ITEM_CD']);
-});//Here if you give it a callback Function, then it will be call when foreach very item of result;
+.join("cid", categories, 'c.id')
+.join("id", attrs, 'a.gid')
+//.fields('*')
+.fields(['c.id as cid2', 'c.name as 分类名称','a.name as 属性名称'])
+//.where({"id":"2"})
+.where_between('c.id', [1, 100])
+.where_like('a.name', 'goods')
+.where_in("c.id", [2, 4])
+.order_by({ "id": 'desc', "cid": 1 })
+.limit(0, 10)
+.fetch(function (i, row) {
+//The fetch funciton, if you give it a callback Function as paramter, then it will be call when foreach very item of result;
+console.log('each row:',row);
+});
+
+Example 2:
+Model(goods).where({id:1}).update({name:"商品1"});
+console.log(goods);
+
+Example 3:
+Model(categories).where({id:4}).remove();
+console.log(goods);
+
+
 ```
