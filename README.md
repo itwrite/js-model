@@ -32,7 +32,7 @@ var attrs = [{ id: 1, gid: 1, name: "goods1_attr" }, { id: 2, gid: 2, name: "goo
 
 Example 1:
 
-Model(goods)
+var list = Model(goods)
 .debug(true)
 .join("cid", categories, 'c.id')
 .join("id", attrs, 'a.gid')
@@ -46,6 +46,8 @@ Model(goods)
 .limit(0, 10)
 .select();
 
+console.log(list);
+
 
 
 Example 2:
@@ -56,7 +58,7 @@ console.log(goods);
 
 Example 3:
 Model(categories).where({id:4}).remove();
-console.log(goods);
+console.log(categories);
 
 
 
