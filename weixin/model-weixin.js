@@ -825,7 +825,8 @@
           obj[lf] = one[lf];
         }
         for (var rf in second) {
-          obj[t2_alias + '.' + rf] = (is_both == true ? second[rf] : null);
+           var _nrf = rf.indexOf('.')>-1?rf:t2_alias + '.'+rf;
+           obj[ _nrf] = (is_both == true ? second[rf] : null);
         }
         return obj;
       };
