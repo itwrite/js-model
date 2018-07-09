@@ -1,19 +1,16 @@
 /**
- * Created by zzpzero on 2017/3/27.
+ * Created by zzpzero on 2018/7/9.
+ *
+ * version 1.2.1
+ * Created by zzpzero.
  */
 
 (function (global, factory) {
-    if (typeof module === "object" && typeof module.exports === "object") {
-        module.exports = global.document ?
-            factory(global, true) :
-            function (w) {
-                return factory(w);
-            };
-    } else {
-        return factory(global);
-    }
-}(typeof window !== "undefined" ? window : this, function (window, noGlobal) {
-    var _debug = false,
+    typeof exports === 'object' && typeof module !== 'undefined' ? module.exports = factory() :
+        typeof define === 'function' && define.amd ? define(factory) :
+            (global.M = global.Model = factory());
+}(typeof window !== "undefined" ? window : this, function () {
+    var _debug = true,
         __bindings = {},
         __time = null,
         __data = [],
@@ -23,40 +20,35 @@
         __join_types = ['left', 'right', 'inner'],
         __booleans_or_arr = ['||', '|', 'or'];
 
-    var version = "1.0.2",
+    var version = "1.2.1",
 
         r_trim = /^[\s\uFEFF\xA0]+|[\s\uFEFF\xA0]+$/g,
-        escaper = /\\|'|\r|\n|\u2028|\u2029/g;
+        escape_rgx = /\\|'|\r|\n|\u2028|\u2029/g;
 
+    // Certain characters need to be escaped so that they can be put into a
+    // string literal.
+    var escapes = {"'": "'", '\\': '\\', '\r': 'r', '\n': 'n', '\u2028': 'u2028', '\u2029': 'u2029'};
+
+    /**
+     * @param match
+     * @returns {string}
+     */
+    function escapeChar(match) {
+        return '\\' + escapes[match];
+    }
+
+    /**/
     var Log = function () {
         if (_debug == true) {
             var time = (new Date()).getTime();
             var arr = ["echo[" + (time - __time) / 1000 + "s]:"];
             for (var i in arguments) {
-                arr.push(arguments[i]);
+                if (arguments.hasOwnProperty(i)) {
+                    arr.push(arguments[i]);
+                }
             }
             console.log.apply(this, arr);
         }
-    };
-
-    // Certain characters need to be escaped so that they can be put into a
-    // string literal.
-    var escapes = {
-        "'": "'",
-        '\\': '\\',
-        '\r': 'r',
-        '\n': 'n',
-        '\u2028': 'u2028',
-        '\u2029': 'u2029'
-    };
-
-    /**
-     *
-     * @param match
-     * @returns {string}
-     */
-    var escapeChar = function (match) {
-        return '\\' + escapes[match];
     };
 
     /**
@@ -78,6 +70,9 @@
                 }
             });
             return sum;
+        },
+        filter: function (list, callback) {
+            return Algorithm.filter.apply(this, arguments);
         }
     };
 
@@ -124,7 +119,7 @@
                 return _boolean;
             },
             set: function (boolean) {
-                _boolean = Algorithm.convert_boolean(boolean);
+                _boolean = Algorithm.getBoolean(boolean);
             }
         });
         Object.defineProperty(this, 'operator', {
@@ -132,7 +127,7 @@
                 return _operator;
             },
             set: function (operator) {
-                _operator = Algorithm.convert_operator(operator);
+                _operator = Algorithm.getOperator(operator);
             }
         });
         this.field = key;
@@ -147,14 +142,13 @@
      * @constructor
      */
     function WhereObj(boolean) {
-        var that = this;
         var _boolean, _conditionArr = [];
         Object.defineProperty(this, 'boolean', {
             get: function () {
                 return _boolean;
             },
             set: function (boolean) {
-                _boolean = Algorithm.convert_boolean(boolean);
+                _boolean = Algorithm.getBoolean(boolean);
             }
         });
         Object.defineProperty(this, 'conditions', {
@@ -177,7 +171,9 @@
             if (Helper.isObject(key)) {
                 boolean = operator;
                 for (var k in key) {
-                    that.where(k, __operators[0], key[k], boolean);
+                    if (key.hasOwnProperty(k)) {
+                        that.where(k, __operators[0], key[k], boolean);
+                    }
                 }
             } else if (Helper.isString(key) && String(key).length > 0) {
                 if (arguments.length == 2) {
@@ -195,36 +191,13 @@
             return this;
         };
 
-        /**
-         *
-         * @returns {string}
-         */
-        this.queryString = function () {
-            var strArr = [];
-            Helper.each(that.conditions, function (i, cond) {
-                if (parseInt(i) > 0) {
-                    strArr.push(Helper.inArray(cond['boolean'], __booleans_or_arr, 0) != -1 ? ' OR ' : ' AND ');
-                }
-                if (cond instanceof WhereObj) {
-                    strArr.push("(" + cond.queryString() + ")");
-                } else if (cond instanceof ConditionObj) {
-                    var field = cond['field'];
-                    var value = cond['value'];
-                    value = String(value).replace(escaper, escapeChar);
-                    strArr.push("`" + field + "`")
-                    strArr.push(cond['operator']);
-                    strArr.push(Helper.isNumber(cond['value']) ? cond['value'] : "'" + (cond['operator'] == 'like' ? "%" + String(cond['value']) + "%" : String(cond['value'])) + "'");
-                }
-            });
-            return strArr.join(' ');
-        };
-
-        var parseCondition = function (params, cond) {
+        var resolveCondition = function (params, cond) {
             if (cond instanceof WhereObj) {
                 return cond.isMatch(params);
             } else if (cond instanceof ConditionObj) {
                 var field = cond['field'];
                 var value = cond['value'];
+                value = String(value).replace(escape_rgx, escapeChar);
                 var j_bok = false;
                 if (Helper.isDefined(params[field])) {
                     switch (cond['operator']) {
@@ -257,17 +230,10 @@
                             j_bok = params[field] >= value;
                             break;
                         case 'like':
-                            var isLike = function (val, arr) {
-                                var bok = false;
-                                Helper.each(arr, function (n, s) {
-                                    if (s != '' && String(val).indexOf(s) > -1) {
-                                        bok = true;
-                                        return false;
-                                    }
-                                });
-                                return bok;
-                            };
-                            j_bok = isLike(params[field], String(value).replace(escaper, escapeChar).split('%'));
+                            var regExpStr = String(value)
+                                .replace(/%/g, '(.*)');
+                            var regExpObj = new RegExp("^" + regExpStr + "$");
+                            j_bok = regExpObj.test(params[field]);
                             break;
                         default :
                             j_bok = false;
@@ -278,7 +244,7 @@
             return Helper.isBoolean(cond) ? cond : false;
         };
 
-        this.isMatch = function (params) {
+        this.isMatch = function (data) {
             var that = this;
             var conditions = that.conditions;
             //如果condition为空，则反回true
@@ -291,12 +257,12 @@
                 if (parseInt(i) > 0) {
                     //if 'or'
                     if (Helper.inArray(cond['boolean'], __booleans_or_arr, 0) != -1) {
-                        bool = bool || parseCondition(params, cond);
+                        bool = bool || resolveCondition(data, cond);
                     } else {
-                        bool = bool && parseCondition(params, cond);
+                        bool = bool && resolveCondition(data, cond);
                     }
                 } else {
-                    bool = parseCondition(params, cond);
+                    bool = resolveCondition(data, cond);
                 }
             });
             return bool;
@@ -331,14 +297,7 @@
             }
             return -1;
         },
-        /**
-         *
-         * @param o
-         * @returns {string}
-         */
-        typeToString: function (o) {
-            return Object.prototype.toString.call(o);
-        },
+
         /**
          *
          * @param text
@@ -347,6 +306,67 @@
         trim: function (text) {
             return text == null ? "" : ( text + "" ).replace(r_trim, "");
         },
+
+        /**
+         *
+         * @param o
+         * @returns {string}
+         */
+        getType: function (o) {
+            return Object.prototype.toString.call(o);
+        },
+        /**
+         *
+         * @returns {boolean}
+         */
+        isNull: function (o) {
+            return this.getType(o) == '[object Null]';
+        },
+        /**
+         *
+         * @returns {boolean}
+         */
+        isNumber: function (o) {
+            return this.getType(o) == '[object Number]';
+        },
+        /**
+         *
+         * @param o
+         * @returns {boolean}
+         */
+        isString: function (o) {
+            return this.getType(o) == '[object String]';
+        },
+        /**
+         *
+         * @param o
+         * @returns {boolean}
+         */
+        isArray: function (o) {
+            return this.getType(o) == '[object Array]';
+        },
+        /**
+         *
+         * @returns {boolean}
+         */
+        isObject: function (o) {
+            return this.getType(o) == '[object Object]';
+        },
+        /**
+         *
+         * @returns {boolean}
+         */
+        isFunction: function (o) {
+            return this.getType(o) == '[object Function]';
+        },
+        /**
+         *
+         * @param o
+         * @returns {boolean}
+         */
+        isDefined: function (o) {
+            return typeof o != 'undefined';
+        },
         /**
          *
          * @param obj
@@ -354,9 +374,8 @@
          */
         isWindow: function (obj) {
             /* jshint eqeqeq: false */
-            return obj != null && typeof (obj['window'] !='undefined') && obj == obj.window;
+            return obj != null && typeof (obj['window'] != 'undefined') && obj == obj.window;
         },
-
         /**
          *
          * @param obj
@@ -370,6 +389,7 @@
             }
             return true;
         },
+
         /**
          *
          * @param obj
@@ -407,23 +427,20 @@
 
         /**
          *
-         * @param o
-         * @returns {boolean}
+         * @param obj
+         * @returns {*}
          */
-        isArray: function (o) {
-            return this.typeToString(o) == '[object Array]';
-        },
+        copy: function (obj) {
+            var that = this;
+            if (Helper.isNull(obj) || typeof obj != 'object') {
+                return obj;
+            }
 
-        isString: function (o) {
-            return this.typeToString(o) == '[object String]';
-        },
-        /**
-         *
-         * @param o
-         * @returns {boolean}
-         */
-        isDefined: function (o) {
-            return typeof o != 'undefined';
+            var new_obj = Helper.isArray(obj) ? [] : {};
+            Helper.each(obj, function (i, n) {
+                new_obj[i] = that.copy(n);
+            });
+            return new_obj;
         },
 
         /**
@@ -464,32 +481,34 @@
 
                     // Extend the base object
                     for (name in options) {
-                        src = target[name];
-                        copy = options[name];
+                        if (options.hasOwnProperty(name)) {
+                            src = target[name];
+                            copy = options[name];
 
-                        // Prevent never-ending loop
-                        if (target === copy) {
-                            continue;
-                        }
-
-                        // Recurse if we're merging plain objects or arrays
-                        if (deep && copy && ( Helper.isPlainObject(copy) ||
-                            ( copyIsArray = Helper.isArray(copy) ) )) {
-
-                            if (copyIsArray) {
-                                copyIsArray = false;
-                                clone = src && Helper.isArray(src) ? src : [];
-
-                            } else {
-                                clone = src && Helper.isPlainObject(src) ? src : {};
+                            // Prevent never-ending loop
+                            if (target === copy) {
+                                continue;
                             }
 
-                            // Never move original objects, clone them
-                            target[name] = Helper.extend(deep, clone, copy);
+                            // Recurse if we're merging plain objects or arrays
+                            if (deep && copy && ( Helper.isPlainObject(copy) ||
+                                ( copyIsArray = Helper.isArray(copy) ) )) {
 
-                            // Don't bring in undefined values
-                        } else if (copy !== undefined) {
-                            target[name] = copy;
+                                if (copyIsArray) {
+                                    copyIsArray = false;
+                                    clone = src && Helper.isArray(src) ? src : [];
+
+                                } else {
+                                    clone = src && Helper.isPlainObject(src) ? src : {};
+                                }
+
+                                // Never move original objects, clone them
+                                target[name] = Helper.extend(deep, clone, copy);
+
+                                // Don't bring in undefined values
+                            } else if (copy !== undefined) {
+                                target[name] = copy;
+                            }
                         }
                     }
                 }
@@ -515,8 +534,8 @@
                     }
                 }
             } else {
-                for (i in obj) {
-                    if (callback.call(obj[i], i, obj[i]) === false) {
+                for (var k in obj) {
+                    if (obj.hasOwnProperty(k) && callback.call(obj[k], k, obj[k]) === false) {
                         break;
                     }
                 }
@@ -527,9 +546,9 @@
     };
 
     // Add some isType methods: isArguments, isFunction, isNumber, isDate, isRegExp, isError.
-    Helper.each(['Arguments', 'Function', 'Number', 'Date', 'RegExp', 'Error', 'Object', 'Boolean'], function (i, name) {
+    Helper.each(['Arguments', 'Date', 'RegExp', 'Error'], function (i, name) {
         Helper['is' + name] = function (obj) {
-            return Helper.typeToString(obj) === '[object ' + name + ']';
+            return Helper.getType(obj) === '[object ' + name + ']';
         };
     });
 
@@ -537,34 +556,33 @@
         extend: function () {
             Helper.extend.apply(this, arguments);
         },
-        split_name: function (name, glue) {
+        splitName: function (name, glue) {
             glue = glue ? glue : ' ';
             name = Helper.trim(name.replace(/\s+/g, ' '));
             var arr = name.split(glue);
             name = arr[0];
             return [name, (arr.length > 1 ? arr[1] : name)];
         },
-        convert_join_type: function (join_type) {
+        getJoinType: function (join_type) {
             return Helper.inArray(String(join_type).toLocaleLowerCase(), __join_types, 0) != -1 ? join_type : __join_types[2];
         },
-        convert_reverse: function (rudder) {
+        getReverseType: function (rudder) {
             return (String(rudder).toLocaleLowerCase() == 'desc' || rudder == true || rudder == 1) ? 1 : 0;
         },
-        convert_boolean: function (boolean) {
+        getBoolean: function (boolean) {
             boolean = Helper.inArray(boolean, ['and', 'or'], 0) != -1 ? __booleans_map[boolean] : boolean;
             return (Helper.isString(boolean) && Helper.inArray(boolean, __booleans, 0) > -1 ? boolean : __booleans[0]);
         },
-        convert_operator: function (operator) {
+        getOperator: function (operator) {
             return (Helper.isString(operator) && Helper.inArray(operator, __operators, 0) > -1 ? operator : __operators[0]);
         },
-        convert_columns: function (row, fields) {
-            var that = this;
-            var columns = [];
+        getColumns: function (row, fields) {
+            var columns = [], f;
             var _fields = fields;//should be array
             _fields = _fields.length > 0 ? _fields : ['*'];
             //field
             var field_count = 0;
-            for (var i in _fields) {
+            for (var i = 0; i < _fields.length; i++) {
                 var field = _fields[i];
                 if (Helper.isString(field)) {
                     //去掉左右空格
@@ -574,23 +592,26 @@
                      */
                     if (/^\s*\*\s*$/gi.test(field)) {
                         field_count++;
-                        for (var f in row) {
-                            columns.push({field: f, alias: ''});
+                        for (f in row) {
+                            if (row.hasOwnProperty(f)) {
+                                columns.push({field: f, alias: ''});
+                            }
                         }
                     } else {
-                        var arr = field.replace(/^\s+(as)\s+$/i, ' as ').split(' as ');
+                        var arr = field.replace(/\s+(as)\s+/i, ' ').split(' ');
                         columns.push({field: arr[0], alias: (arr[1] ? arr[1] : '')});
                     }
                 } else if (Helper.isObject(field)) {
-                    for (var f in field) {
-                        columns.push({field: f, alias: Helper.isString(field[f]) ? field[f] : ''});
+                    for (f in field) {
+                        if (field.hasOwnProperty(f)) {
+                            columns.push({field: f, alias: Helper.isString(field[f]) ? field[f] : ''});
+                        }
                     }
                 }
             }
             //Log(columns);
             return columns;
         },
-
         /**
          *
          * @param list1
@@ -603,14 +624,14 @@
          */
         join: function (list1, key1, list2, key2, join_type, row_callback) {
             var that = this, result = [], row2_temp = list2[0];// Object.keys(list2[0]);
-            var groups = that.groups(list2, key2);
+            var groups = that.getGroups(list2, key2);
             //Log(key1,key2,list1);
 
             Helper.each(list1, function (i, row1) {
                 var val = row1[key1];
                 //if it's matched
-                if (Helper.isDefined(groups[val])) {
-                    Helper.each(groups[val], function (j, row2) {
+                if (Helper.isDefined(groups.data[val])) {
+                    Helper.each(groups.data[val], function (j, row2) {
                         if (Helper.isFunction(row_callback)) {
                             result.push(Helper.extend({}, row_callback.apply(Helper, [row1, row2, true])));
                         }
@@ -624,33 +645,15 @@
         /**
          *
          * @param list
-         * @param field
          * @param callback
-         * @returns {{}}
+         * @returns {*}
          */
-        groups: function (list, field, callback) {
-            var groups = {};
-            Helper.each(list, function (i, row) {
-                var key = row[field];
-                if (Helper.isDefined(key)) {
-                    if (!Helper.isDefined(groups[key])) {
-                        if (Helper.isFunction(callback)) {
-                            callback.call(row, key);
-                        }
-                        groups[key] = [];
-                    }
-                    groups[key].push(row);
-                }
-            });
-            return groups;
-        },
         filter: function (list, callback) {
-            var that = this, new_list = [];
+            var new_list = [];
             if (list.length > 0 && Helper.isFunction(callback)) {
                 Helper.each(list, function (i, row) {
-                    var new_row = callback.call(row, row, i);
-                    if (new_row != false && !Helper.isEmptyObject(new_row)) {
-                        new_list.push(new_row);
+                    if (callback.call(row, row, i) == true) {
+                        new_list.push(row);
                     }
                 });
             } else {
@@ -666,56 +669,56 @@
          * @param callback
          * @returns {*}
          */
-        order_by: function (list, order_by_arr, order_by_i, callback) {
+        orderBy: function (list, order_by_arr, order_by_i, callback) {
             order_by_i = order_by_i > 0 ? order_by_i : 0;
             var that = this, new_list = [];
             //需要排序
             if (order_by_arr.length > 0 && order_by_i < order_by_arr.length) {
                 var sort = order_by_arr[order_by_i];
                 var field = sort['field'];
-                var order = sort['rudder'];
 
-                var keys = [];
-                var groups = that.groups(list, field, function (key) {
-                    keys.push(key);
-                });
+                var groups = that.getGroups(list, field);
+                var keys = groups.keys;
 
                 if (keys.length > 0) {
-                    /**
-                     * sort
-                     */
-                    var reverse = !1;
-                    if (Helper.isObject(order)) {
-                        if (Helper.isDefined(order['reverse'])) {
-                            reverse = that.convert_reverse(order['reverse']);
+                    if (Helper.isDefined(sort['rudder'])) {
+                        var order = sort['rudder'];
+                        /**
+                         * sort
+                         */
+                        var reverse = !1;
+                        if (Helper.isObject(order)) {
+                            if (Helper.isDefined(order['reverse'])) {
+                                reverse = that.getReverseType(order['reverse']);
+                            }
+                        } else {
+                            reverse = that.getReverseType(order);
                         }
-                    } else {
-                        reverse = that.convert_reverse(order);
-                    }
 
-                    if (Helper.isDefined(order['fx'])) {
-                        keys = keys.sort(function (a, b) {
-                            var A = parseFloat(order['fx'].call(Vendor, groups[a])), B = parseFloat(order['fx'].call(Vendor, groups[b]));
-                            return (A < B ? -1 : 1) * [1, -1][+!!reverse];
-                        });
-                    } else {
-                        keys = keys.sort(function (a, b) {
-                            return compareFunc(a, b) * [1, -1][+!!reverse];
-                        });
+                        if (Helper.isDefined(order['fx'])) {
+                            keys = keys.sort(function (a, b) {
+                                var A = parseFloat(order['fx'].call(Vendor, groups.data[a])), B = parseFloat(order['fx'].call(Vendor, groups.data[b]));
+                                return (A < B ? -1 : 1) * [1, -1][+!!reverse];
+                            });
+                        } else {
+                            keys = keys.sort(function (a, b) {
+                                return compareFunc(a, b) * [1, -1][+!!reverse];
+                            });
+                        }
                     }
 
                     /**
                      * 排好序后遍历输出
                      */
                     Helper.each(keys, function (i, k) {
-                        var lst = groups[k];
-                        lst = that.order_by(lst, order_by_arr, order_by_i + 1, callback);
+                        var lst = groups.data[k];
+                        lst = that.orderBy(lst, order_by_arr, order_by_i + 1, callback);
                         Helper.each(lst, function (j, row) {
                             new_list.push(row);
                         });
                     });
                 } else {
-                    return that.order_by(list, order_by_arr, order_by_i + 1, callback);
+                    return that.orderBy(list, order_by_arr, order_by_i + 1, callback);
                 }
             } else {
                 Helper.each(list, function (i, row) {
@@ -734,7 +737,7 @@
          * @param columns
          * @returns {{}}
          */
-        get_row_data: function (row, columns) {
+        filterRow: function (row, columns) {
             /**/
             var new_row = {};
             Helper.each(columns, function (k, n) {
@@ -744,30 +747,56 @@
                 }
             });
             return new_row;
+        },
+        /**
+         *
+         * @param list
+         * @param field
+         * @returns {{data: {}, keys: Array}}
+         */
+        getGroups: function (list, field) {
+            var result = {data: {}, keys: []};
+            Helper.each(list, function (i, row) {
+                if (Helper.isDefined(row[field])) {
+                    var res = true;
+                    if (res !== false) {
+                        var key = row[field];
+                        if (!Helper.isDefined(result['data'][key])) {
+                            result.data[key] = [];
+                            result.keys.push(key);
+                        }
+                        result.data[key].push(row);
+                    }
+                }
+            });
+            return result;
         }
     };
 
     // Define a local copy of Model
-    var Model = function (data) {
+    var Model = function (data, callback) {
         // The Model object is actually just the init constructor 'enhanced'
         // Need init if Model is called (just allow error to be thrown if not included)
-        return new Model.fn.table(data);
+        return new Model.fn.table(data, callback);
     };
 
     Model.fn = Model.prototype = {
         // The current version of Model being used
-        model: version,
+        version: version,
 
         constructor: Model,
         // Execute a callback for every element in the matched set.
         extend: function () {
             return Helper.extend.apply(this, arguments);
         },
-        table: function (data) {
+        table: function (data, callback) {
             var that = this;
             that.clear();
             __data = data;
             __time = (new Date()).getTime();
+            if (arguments.length > 1 && Helper.isFunction(callback)) {
+                return this.filter(callback);
+            }
             return this;
         },
         debug: function (debug) {
@@ -782,7 +811,6 @@
          * @returns {*}
          */
         clear: function () {
-            var that = this;
             __bindings = {
                 where: new WhereObj('&&'), //condition
                 fields: [], // select fields
@@ -791,7 +819,6 @@
             };
             return this;
         },
-
         /**
          * set fields
          * @param fields
@@ -819,18 +846,22 @@
         join: function (key1, list2, key2, join_type) {
             var that = this;
 
-            join_type = Algorithm.convert_join_type(join_type);
-            var t2_arr = Algorithm.split_name(key2, '.');
+            join_type = Algorithm.getJoinType(join_type);
+            var t2_arr = Algorithm.splitName(key2, '.');
             var t2_alias = t2_arr[0];
             key2 = t2_arr[1];
             var get_new_row = function (one, second, is_both) {
                 var obj = {};
                 for (var lf in one) {
-                    obj[lf] = one[lf];
+                    if (one.hasOwnProperty(lf)) {
+                        obj[lf] = one[lf];
+                    }
                 }
                 for (var rf in second) {
-                    var _nrf = rf.indexOf('.')>-1?rf:t2_alias + '.'+rf;
-                    obj[ _nrf] = (is_both == true ? second[rf] : null);
+                    if (second.hasOwnProperty(rf)) {
+                        var _nrf = rf.indexOf('.') > -1 ? rf : t2_alias + '.' + rf;
+                        obj[_nrf] = (is_both == true ? second[rf] : null);
+                    }
                 }
                 return obj;
             };
@@ -873,7 +904,6 @@
          * @returns {*}
          */
         where: function (field, operator, val, boolean) {
-            var that = this;
             __bindings['where'].where(field, operator, val, boolean);
             return this;
         },
@@ -890,7 +920,9 @@
                 that.where(function () {
                     if (Helper.isArray(values)) {
                         for (var k in values) {
-                            this.where(field, __operators[0], values[k], __booleans_or_arr[0]);
+                            if (values.hasOwnProperty(k)) {
+                                this.where(field, __operators[0], values[k], __booleans_or_arr[0]);
+                            }
                         }
                     }
                 }, boolean);
@@ -910,7 +942,10 @@
                 that.where(function () {
                     if (Helper.isArray(values)) {
                         for (var k in values) {
-                            this.where(field, '!=', values[k], __booleans[0]);
+                            if (values.hasOwnProperty(k)) {
+                                this.where(field, '!=', values[k], __booleans[0]);
+                            }
+
                         }
                     }
                 }, boolean);
@@ -953,7 +988,6 @@
          * @returns {*}
          */
         limit: function (offset, size) {
-            var that = this;
             if (arguments.length == 1) {
                 __bindings['limit'] = [0, Math.max(0, offset)];
             } else if (arguments.length > 1) {
@@ -970,17 +1004,14 @@
             var list = __data;
 
             //Log(__data[0]);
-            var columns = Algorithm.convert_columns(__data[0], __bindings['fields']);
-
+            var columns = Algorithm.getColumns(__data[0], __bindings['fields']);
+            Log('columns:', columns);
             /**
              * 如果有where 则筛选。
              */
             if (__bindings['where'].conditions.length > 0) {
                 list = Algorithm.filter(list, function (row) {
-                    if (__bindings['where'].isMatch(row)) {
-                        return row;
-                    }
-                    return false;
+                    return __bindings['where'].isMatch(row);
                 });
             }
 
@@ -988,13 +1019,15 @@
              * 如果需要排序
              */
             if (__bindings['order_by'].length > 0) {
-                list = Algorithm.order_by(list, __bindings['order_by'], 0, function (row) {
-                    return Algorithm.get_row_data(row, columns);
+                list = Algorithm.orderBy(list, __bindings['order_by'], 0, function (row) {
+                    return Algorithm.filterRow(row, columns);
                 });
             } else {
-                list = Algorithm.filter(list, function (row) {
-                    return Algorithm.get_row_data(row, columns);
+                var newList = [];
+                Helper.each(list, function (i, row) {
+                    newList.push(Algorithm.filterRow(row, columns));
                 });
+                list = newList;
             }
             /**
              * 如果有分页
@@ -1002,49 +1035,17 @@
             if (__bindings['limit'].length > 0) {
                 list = list.slice(__bindings['limit'][0], Math.min(__bindings['limit'][1], list.length));
             }
-            Log("List--", list);
-            Log("SQL--", this.getSql());
+            Log("Result::", list);
             that.clear();
             return list;
         },
         find: function (where) {
             var that = this;
             var list = that.where(where).get();
-            return list.length > 0 ? list[0] : false;
-        },
-
-        /**
-         *
-         * @returns {number}
-         */
-        remove: function () {
-            this.where.apply(this, arguments);
-            /**
-             * 如果有where 则筛选。
-             */
-            var effect_rows = 0;
-
-            if (__bindings['where'].conditions.length > 0) {
-                var list = Algorithm.filter(__data, function (row, i) {
-                    if (__bindings['where'].isMatch(row)) {
-                        effect_rows++;
-                        return false;
-                    }
-                    return row;
-                });
-                __data.length = 0;
-                Helper.each(list, function (i) {
-                    __data.push(this);
-                });
-            } else {
-                effect_rows = __data.length;
-                __data.length = 0;
-            }
-
-            return effect_rows;
+            return list.length > 0 ? list[0] : null;
         },
         update: function (data) {
-            if(!Helper.isObject(data)){
+            if (!Helper.isObject(data)) {
                 return 0;
             }
             /**
@@ -1053,12 +1054,14 @@
             var effect_rows = 0;
 
             if (__bindings['where'].conditions.length > 0) {
-                Helper.each(__data, function (i,row) {
+                Helper.each(__data, function (i, row) {
                     //匹配上的则更新
                     if (__bindings['where'].isMatch(row)) {
                         effect_rows++;
-                        for(var k in data){
-                            __data[i][k] = data[k];
+                        for (var k in data) {
+                            if (data.hasOwnProperty(k)) {
+                                __data[i][k] = data[k];
+                            }
                         }
                     }
                 });
@@ -1066,8 +1069,10 @@
             } else {
                 Helper.each(__data, function (i) {
                     effect_rows++;
-                    for(var k in data){
-                        __data[i][k] = data[k];
+                    for (var k in data) {
+                        if (data.hasOwnProperty(k)) {
+                            __data[i][k] = data[k];
+                        }
                     }
                 });
             }
@@ -1092,8 +1097,16 @@
         count: function () {
             return this.get().length;
         },
-        getSql: function () {
-            return __bindings['where'].queryString();
+        filter: function (where) {
+            if (arguments.length > 0) {
+                if (Helper.isFunction(where)) {
+                    return Algorithm.filter(__data, where);
+                } else {
+                    this.where.apply(this, arguments);
+                    return this.get();
+                }
+            }
+            return __data;
         }
     });
 
@@ -1103,45 +1116,6 @@
     Model.fn.size = function () {
         return this.length;
     };
-
-    // Register as a named AMD module, since Model can be concatenated with other
-    // files that may use define, but not via a proper concatenation script that
-    // understands anonymous AMD modules. A named AMD is safest and most robust
-    // way to register. Lowercase model is used because AMD module names are
-    // derived from file names, and Model is normally delivered in a lowercase
-    // file name. Do this after creating the global so that if an AMD module wants
-    // to call noConflict to hide this version of Model, it will work.
-
-    if (typeof define === "function" && define.amd) {
-        define("model", [], function () {
-            return Model;
-        });
-    }
-
-
-    var
-
-    // Map over Model in case of overwrite
-        _Model = window.Model,
-
-    // Map over the M in case of overwrite
-        _M = window.M;
-
-    Model.noConflict = function (deep) {
-        if (window.M === Model) {
-            window.M = _M;
-        }
-
-        if (deep && window.Model === Model) {
-            window.Model = _Model;
-        }
-
-        return Model;
-    };
-
-    if (!noGlobal) {
-        window.Model = window.M = Model;
-    }
 
     return Model;
 }));
