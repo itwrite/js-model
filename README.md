@@ -1,4 +1,4 @@
-[Model](https://github.com/itwrite/model/) — 1.0.2
+[Model](https://github.com/itwrite/model/) — 1.2.1
 ==================================================
 
 Contribution Guides
@@ -35,15 +35,19 @@ Environments in which to use Model
 
 How use Model? Examples:
 ----------------------------
+```
 <script src="https://github.com/itwrite/js-model/blob/master/model.js"></script>
+```
 OR  [download](https://github.com/itwrite/js-model/blob/master/model.js)
 
 ```bash
-
+// Demo data
 var categories = [{ id: 2, name: "cat1" }, { id: 4, name: "cat2" }];
 var goods = [{ id: 1, cid: 2, name: "goods1" }, { id: 2, cid: 4, name: "goods2" }];
 var attrs = [{ id: 1, gid: 1, name: "goods1_attr" }, { id: 2, gid: 2, name: "goods2_attr" }];
 
+```
+```
 //Example 1:
 
 var list = Model(goods)
