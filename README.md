@@ -33,13 +33,15 @@ Environments in which to use Model
 
 - [source](https://github.com/itwrite/js-model/blob/master/model.js)
 
-How use Model? Examples:
+How use Model? 
 ----------------------------
 ```
 <script src="https://github.com/itwrite/js-model/blob/master/model.js"></script>
 ```
 OR  [download](https://github.com/itwrite/js-model/blob/master/model.js)
 
+Examples:
+--------------------------------------
 ```bash
 // Demo data
 var categories = [{ id: 2, name: "cat1" }, { id: 4, name: "cat2" }];
