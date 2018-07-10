@@ -30,25 +30,52 @@
     var escapes = {"'": "'", '\\': '\\', '\r': 'r', '\n': 'n', '\u2028': 'u2028', '\u2029': 'u2029'};
 
     /**
-     * @param match
-     * @returns {string}
+     *
+     * @type {{log: Function}}
      */
-    function escapeChar(match) {
-        return '\\' + escapes[match];
-    }
-
-    /**/
-    var Log = function () {
-        if (_debug == true) {
-            var time = (new Date()).getTime();
-            var arr = ["echo[" + (time - __time) / 1000 + "s]:"];
-            for (var i in arguments) {
-                if (arguments.hasOwnProperty(i)) {
-                    arr.push(arguments[i]);
+    var Debug = {
+        log: function () {
+            if (_debug == true) {
+                var time = (new Date()).getTime();
+                var arr = ["echo[" + (time - __time) / 1000 + "s]:"];
+                for (var i in arguments) {
+                    if (arguments.hasOwnProperty(i)) {
+                        arr.push(arguments[i]);
+                    }
                 }
+                console.log.apply(this, arr);
             }
-            console.log.apply(this, arr);
         }
+    };
+
+    var Fun = {
+        /**
+         *
+         * @param param1
+         * @param param2
+         * @returns {*}
+         */
+        compare:function (param1, param2) {
+        //if both are strings
+        if (typeof param1 == "string" && typeof param2 == "string") {
+            return param1.localeCompare(param2);
+        }
+        //if param1 is a number but param2 is a string
+        if (typeof param1 == "number" && typeof param2 == "string") {
+            return -1;
+        }
+        //if param1 is a string but param2 is a number
+        if (typeof param1 == "string" && typeof param2 == "number") {
+            return 1;
+        }
+        //if both are numbers
+        if (typeof param1 == "number" && typeof param2 == "number") {
+            if (param1 > param2) return 1;
+            if (param1 == param2) return 0;
+            if (param1 < param2) return -1;
+        }
+        return 0;
+    }
     };
 
     /**
@@ -75,34 +102,6 @@
             return Algorithm.filter.apply(this, arguments);
         }
     };
-
-    /**
-     *
-     * @param param1
-     * @param param2
-     * @returns {*}
-     */
-    function compareFunc(param1, param2) {
-        //if both are strings
-        if (typeof param1 == "string" && typeof param2 == "string") {
-            return param1.localeCompare(param2);
-        }
-        //if param1 is a number but param2 is a string
-        if (typeof param1 == "number" && typeof param2 == "string") {
-            return -1;
-        }
-        //if param1 is a string but param2 is a number
-        if (typeof param1 == "string" && typeof param2 == "number") {
-            return 1;
-        }
-        //if both are numbers
-        if (typeof param1 == "number" && typeof param2 == "number") {
-            if (param1 > param2) return 1;
-            if (param1 == param2) return 0;
-            if (param1 < param2) return -1;
-        }
-        return 0;
-    }
 
     /**
      *
@@ -197,7 +196,9 @@
             } else if (cond instanceof ConditionObj) {
                 var field = cond['field'];
                 var value = cond['value'];
-                value = String(value).replace(escape_rgx, escapeChar);
+                value = String(value).replace(escape_rgx, function (match) {
+                    return '\\' + escapes[match];
+                });
                 var j_bok = false;
                 if (Helper.isDefined(params[field])) {
                     switch (cond['operator']) {
@@ -609,7 +610,7 @@
                     }
                 }
             }
-            //Log(columns);
+            //Debug.log(columns);
             return columns;
         },
         /**
@@ -625,7 +626,7 @@
         join: function (list1, key1, list2, key2, join_type, row_callback) {
             var that = this, result = [], row2_temp = list2[0];// Object.keys(list2[0]);
             var groups = that.getGroups(list2, key2);
-            //Log(key1,key2,list1);
+            //Debug.log(key1,key2,list1);
 
             Helper.each(list1, function (i, row1) {
                 var val = row1[key1];
@@ -702,7 +703,7 @@
                             });
                         } else {
                             keys = keys.sort(function (a, b) {
-                                return compareFunc(a, b) * [1, -1][+!!reverse];
+                                return Fun.compare(a, b) * [1, -1][+!!reverse];
                             });
                         }
                     }
@@ -737,7 +738,7 @@
          * @param columns
          * @returns {{}}
          */
-        filterRow: function (row, columns) {
+        getRow: function (row, columns) {
             /**/
             var new_row = {};
             Helper.each(columns, function (k, n) {
@@ -791,16 +792,18 @@
         },
         table: function (data, callback) {
             var that = this;
-            that.clear();
-            __data = data;
-            __time = (new Date()).getTime();
-            if (arguments.length > 1 && Helper.isFunction(callback)) {
-                return this.filter(callback);
+            if(arguments.length>0){
+                that.clear();
+                __data = data;
+                __time = (new Date()).getTime();
+                if (arguments.length > 1 && Helper.isFunction(callback)) {
+                    return this.filter(callback);
+                }
             }
             return this;
         },
         debug: function (debug) {
-            _debug = debug;
+            _debug = debug==false;
             return this;
         }
     };
@@ -818,6 +821,14 @@
                 order_by: [] //sort by
             };
             return this;
+        },
+        /**
+         *
+         * @param data
+         * @returns {*}
+         */
+        from: function (data) {
+          return this.table(data);
         },
         /**
          * set fields
@@ -871,30 +882,10 @@
             } else {
                 __data = Algorithm.join(__data, key1, list2, key2, join_type, get_new_row);
             }
-            Log("end of join,data.length:", __data.length);
+            Debug.log("end of join,data.length:", __data.length);
             return that;
         },
-        /**
-         * set order by
-         * @param field
-         * @param rudder
-         * @returns {*}
-         */
-        order_by: function (field, rudder) {
-            var that = this;
-            if (Helper.isArray(field)) {
-                Helper.each(field, function (i, f) {
-                    that.order_by(f, rudder);
-                });
-            } else if (Helper.isObject(field)) {
-                Helper.each(field, function (f, d) {
-                    that.order_by(f, d);
-                })
-            } else if (Helper.isString(field)) {
-                __bindings['order_by'].push({"field": field, "rudder": rudder});
-            }
-            return this;
-        },
+
         /**
          *
          * @param field
@@ -972,14 +963,35 @@
         /**
          *
          * @param field
-         * @param val
+         * @param value
          * @param boolean
          * @returns {*}
          */
-        where_like: function (field, val, boolean) {
+        where_like: function (field, value, boolean) {
             var that = this;
-            that.where(field, 'like', val, boolean);
+            that.where(field, 'like', value, boolean);
             return that;
+        },
+        /**
+         * set order by
+         * @param field
+         * @param rudder
+         * @returns {*}
+         */
+        order_by: function (field, rudder) {
+            var that = this;
+            if (Helper.isArray(field)) {
+                Helper.each(field, function (i, f) {
+                    that.order_by(f, rudder);
+                });
+            } else if (Helper.isObject(field)) {
+                Helper.each(field, function (f, d) {
+                    that.order_by(f, d);
+                })
+            } else if (Helper.isString(field)) {
+                __bindings['order_by'].push({"field": field, "rudder": rudder});
+            }
+            return this;
         },
         /**
          *
@@ -1003,9 +1015,9 @@
             var that = this;
             var list = __data;
 
-            //Log(__data[0]);
+            //Debug.log(__data[0]);
             var columns = Algorithm.getColumns(__data[0], __bindings['fields']);
-            Log('columns:', columns);
+            Debug.log('columns:', columns);
             /**
              * 如果有where 则筛选。
              */
@@ -1020,12 +1032,12 @@
              */
             if (__bindings['order_by'].length > 0) {
                 list = Algorithm.orderBy(list, __bindings['order_by'], 0, function (row) {
-                    return Algorithm.filterRow(row, columns);
+                    return Algorithm.getRow(row, columns);
                 });
             } else {
                 var newList = [];
                 Helper.each(list, function (i, row) {
-                    newList.push(Algorithm.filterRow(row, columns));
+                    newList.push(Algorithm.getRow(row, columns));
                 });
                 list = newList;
             }
@@ -1035,14 +1047,48 @@
             if (__bindings['limit'].length > 0) {
                 list = list.slice(__bindings['limit'][0], Math.min(__bindings['limit'][1], list.length));
             }
-            Log("Result::", list);
+            Debug.log("Result::", list);
             that.clear();
             return list;
         },
-        find: function (where) {
-            var that = this;
-            var list = that.where(where).get();
+        find: function () {
+            if(arguments){
+                this.where.call(this,arguments);
+            }
+            var list = this.get();
             return list.length > 0 ? list[0] : null;
+        },
+        /**
+         *
+         * @returns {number}
+         */
+        remove: function () {
+            if(arguments.length>0){
+                this.where.apply(this, arguments);
+            }
+
+            /**
+             * 如果有where 则筛选。
+             */
+            var effect_rows = 0;
+
+            if (__bindings['where'].conditions.length > 0) {
+                var list = Algorithm.filter(__data, function (row) {
+                    if (__bindings['where'].isMatch(row)) {
+                        effect_rows++;
+                        return true;
+                    }
+                    return false;
+                });
+                __data = [];
+                Helper.each(list, function () {
+                    __data.push(this);
+                });
+            } else {
+                effect_rows = __data.length;
+                __data = [];
+            }
+            return effect_rows;
         },
         update: function (data) {
             if (!Helper.isObject(data)) {
@@ -1078,21 +1124,21 @@
             }
             return effect_rows;
         },
-        fetch: function (fetch_fn) {
+        fetch: function (callback) {
             var that = this;
             var list = that.get();
 
-            if (Helper.isFunction(fetch_fn)) {
-                Log('fetch begin');
-                Helper.each(list, fetch_fn);
-                Log('fetch end');
+            if (Helper.isFunction(callback)) {
+                Debug.log('fetch begin');
+                Helper.each(list, callback);
+                Debug.log('fetch end');
                 return that;
             }
 
             return list;
         },
-        select: function (fields, where) {
-            return this.fields(fields).where(where).get();
+        select: function (fields) {
+            return this.fields(fields).get();
         },
         count: function () {
             return this.get().length;
