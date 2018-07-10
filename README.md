@@ -31,27 +31,20 @@ filter(callback)
 Environments in which to use Model
 --------------------------------------
 
-- [source](https://github.com/itwrite/js-model/blob/master/model-last.js)
-
-
-How to build your own Model
-----------------------------
-
-Clone a copy of the main Model git repo by running:
-
-```bash
-git clone git://github.com/itwrite/model.git
-```
+- [source](https://github.com/itwrite/js-model/blob/master/model.js)
 
 How use Model? Examples:
 ----------------------------
+<script src="https://github.com/itwrite/js-model/blob/master/model.js"></script>
+OR  [download](https://github.com/itwrite/js-model/blob/master/model.js)
+
 ```bash
 
 var categories = [{ id: 2, name: "cat1" }, { id: 4, name: "cat2" }];
 var goods = [{ id: 1, cid: 2, name: "goods1" }, { id: 2, cid: 4, name: "goods2" }];
 var attrs = [{ id: 1, gid: 1, name: "goods1_attr" }, { id: 2, gid: 2, name: "goods2_attr" }];
 
-Example 1:
+//Example 1:
 
 var list = Model(goods)
 .debug(true)
@@ -69,21 +62,19 @@ var list = Model(goods)
 
 console.log(list);
 
-
-
-Example 2:
+```
+```
+//Example 2:
 Model(goods).where({id:1}).update({name:"商品1"});
 console.log(goods);
-
-
-
-Example 3:
+```
+```
+//Example 3:
 Model(categories).where({id:4}).remove();
 console.log(categories);
-
-
-
-Example 4:
+```
+```
+//Example 4:
 Model(goods)
 .where({"id":"2"})
 .fetch(function (i, row) {
@@ -91,8 +82,9 @@ Model(goods)
 //then it will be call when foreach very item of result;
 console.log('each row:',row);
 });
-
-Example 5:
+```
+```
+//Example 5:
 var one = Model(goods).where({"id":"2"}).find();
-
+console.log(one);
 ```
