@@ -31,14 +31,15 @@ filter(callback)
 Environments in which to use Model
 --------------------------------------
 
-- [source](https://github.com/itwrite/js-model/blob/master/model-1.2.1.js)
+- [source](https://github.com/itwrite/model/blob/master/model-1.2.1.js)
 
 How use Model? 
 ----------------------------
+[download](https://github.com/itwrite/model/)
+Then:
 ```
-<script src="https://github.com/itwrite/js-model/blob/master/model-1.2.1.js"></script>
+<script src="./model-1.2.1.js"></script>
 ```
-OR  [download-1.2.1](https://github.com/itwrite/js-model/blob/master/model-1.2.1.js)
 
 Examples:
 --------------------------------------
