@@ -6,6 +6,27 @@ Contribution Guides
 
 In the spirit of open source software development, Model always encourages community code contribution. To help you get started.
 
+Methods: 
+---------------------------
+```
+debug(boolean) : boolean | true
+from(data) : array | []
+fields:(fields) : array | []
+where(field,operator,value,boolean)
+where_in(field,values,boolean): string,array
+where_not_in(field,values,boolean): string,array
+where_between(field,range,boolean)
+where_like(field,value,boolean)
+order_by(field,rudder)
+limit(offset,size)
+get()
+find()
+update(data)
+fetch(callback)
+select(fields)
+count()
+filter(callback)
+```
 
 Environments in which to use Model
 --------------------------------------
