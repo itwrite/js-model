@@ -35,7 +35,7 @@
      */
     var Debug = {
         log: function () {
-            if (_debug == true) {
+            if (_debug === true) {
                 var time = (new Date()).getTime();
                 var arr = ["echo[" + (time - __time) / 1000 + "s]:"];
                 for (var i in arguments) {
@@ -55,27 +55,27 @@
          * @param param2
          * @returns {*}
          */
-        compare:function (param1, param2) {
-        //if both are strings
-        if (typeof param1 == "string" && typeof param2 == "string") {
-            return param1.localeCompare(param2);
+        compare: function (param1, param2) {
+            //if both are strings
+            if (typeof param1 === "string" && typeof param2 === "string") {
+                return param1.localeCompare(param2);
+            }
+            //if param1 is a number but param2 is a string
+            if (typeof param1 === "number" && typeof param2 === "string") {
+                return -1;
+            }
+            //if param1 is a string but param2 is a number
+            if (typeof param1 === "string" && typeof param2 === "number") {
+                return 1;
+            }
+            //if both are numbers
+            if (typeof param1 === "number" && typeof param2 === "number") {
+                if (param1 > param2) return 1;
+                if (param1 === param2) return 0;
+                if (param1 < param2) return -1;
+            }
+            return 0;
         }
-        //if param1 is a number but param2 is a string
-        if (typeof param1 == "number" && typeof param2 == "string") {
-            return -1;
-        }
-        //if param1 is a string but param2 is a number
-        if (typeof param1 == "string" && typeof param2 == "number") {
-            return 1;
-        }
-        //if both are numbers
-        if (typeof param1 == "number" && typeof param2 == "number") {
-            if (param1 > param2) return 1;
-            if (param1 == param2) return 0;
-            if (param1 < param2) return -1;
-        }
-        return 0;
-    }
     };
 
     /**
@@ -175,7 +175,7 @@
                     }
                 }
             } else if (Helper.isString(key) && String(key).length > 0) {
-                if (arguments.length == 2) {
+                if (arguments.length === 2) {
                     val = operator;
                     _conditionArr.push(new ConditionObj(key, __operators[0], val));
                 } else {
@@ -204,13 +204,13 @@
                     switch (cond['operator']) {
                         case '=':
                         case '==':
-                            j_bok = params[field] == value;
+                            j_bok = params[field] === value;
                             break;
                         case '===':
                             j_bok = params[field] === value;
                             break;
                         case '!=':
-                            j_bok = params[field] != value;
+                            j_bok = params[field] !== value;
                             break;
                         case '<>':
                         case '!==':
@@ -249,7 +249,7 @@
             var that = this;
             var conditions = that.conditions;
             //如果condition为空，则反回true
-            if (conditions.length == 0) {
+            if (conditions.length === 0) {
                 return true;
             }
             //var firstCond = conditions[0];
@@ -257,7 +257,7 @@
             Helper.each(conditions, function (i, cond) {
                 if (parseInt(i) > 0) {
                     //if 'or'
-                    if (Helper.inArray(cond['boolean'], __booleans_or_arr, 0) != -1) {
+                    if (Helper.inArray(cond['boolean'], __booleans_or_arr, 0) !== -1) {
                         bool = bool || resolveCondition(data, cond);
                     } else {
                         bool = bool && resolveCondition(data, cond);
@@ -305,7 +305,7 @@
          * @returns {string}
          */
         trim: function (text) {
-            return text == null ? "" : ( text + "" ).replace(r_trim, "");
+            return text === null ? "" : (text + "").replace(r_trim, "");
         },
 
         /**
@@ -321,14 +321,14 @@
          * @returns {boolean}
          */
         isNull: function (o) {
-            return this.getType(o) == '[object Null]';
+            return this.getType(o) === '[object Null]';
         },
         /**
          *
          * @returns {boolean}
          */
         isNumber: function (o) {
-            return this.getType(o) == '[object Number]';
+            return this.getType(o) === '[object Number]';
         },
         /**
          *
@@ -336,7 +336,7 @@
          * @returns {boolean}
          */
         isString: function (o) {
-            return this.getType(o) == '[object String]';
+            return this.getType(o) === '[object String]';
         },
         /**
          *
@@ -344,21 +344,21 @@
          * @returns {boolean}
          */
         isArray: function (o) {
-            return this.getType(o) == '[object Array]';
+            return this.getType(o) === '[object Array]';
         },
         /**
          *
          * @returns {boolean}
          */
         isObject: function (o) {
-            return this.getType(o) == '[object Object]';
+            return this.getType(o) === '[object Object]';
         },
         /**
          *
          * @returns {boolean}
          */
         isFunction: function (o) {
-            return this.getType(o) == '[object Function]';
+            return this.getType(o) === '[object Function]';
         },
         /**
          *
@@ -366,7 +366,7 @@
          * @returns {boolean}
          */
         isDefined: function (o) {
-            return typeof o != 'undefined';
+            return typeof o !== 'undefined';
         },
         /**
          *
@@ -375,7 +375,7 @@
          */
         isWindow: function (obj) {
             /* jshint eqeqeq: false */
-            return obj != null && typeof (obj['window'] != 'undefined') && obj == obj.window;
+            return obj != null && typeof (obj['window'] !== 'undefined') && obj === obj.window;
         },
         /**
          *
@@ -433,7 +433,7 @@
          */
         copy: function (obj) {
             var that = this;
-            if (Helper.isNull(obj) || typeof obj != 'object') {
+            if (Helper.isNull(obj) || typeof obj !== 'object') {
                 return obj;
             }
 
@@ -478,7 +478,7 @@
             for (; i < length; i++) {
 
                 // Only deal with non-null/undefined values
-                if (( options = arguments[i] ) != null) {
+                if ((options = arguments[i]) != null) {
 
                     // Extend the base object
                     for (name in options) {
@@ -492,8 +492,8 @@
                             }
 
                             // Recurse if we're merging plain objects or arrays
-                            if (deep && copy && ( Helper.isPlainObject(copy) ||
-                                ( copyIsArray = Helper.isArray(copy) ) )) {
+                            if (deep && copy && (Helper.isPlainObject(copy) ||
+                                (copyIsArray = Helper.isArray(copy)))) {
 
                                 if (copyIsArray) {
                                     copyIsArray = false;
@@ -565,13 +565,13 @@
             return [name, (arr.length > 1 ? arr[1] : name)];
         },
         getJoinType: function (join_type) {
-            return Helper.inArray(String(join_type).toLocaleLowerCase(), __join_types, 0) != -1 ? join_type : __join_types[2];
+            return Helper.inArray(String(join_type).toLocaleLowerCase(), __join_types, 0) !== -1 ? join_type : __join_types[2];
         },
         getReverseType: function (rudder) {
-            return (String(rudder).toLocaleLowerCase() == 'desc' || rudder == true || rudder == 1) ? 1 : 0;
+            return (String(rudder).toLocaleLowerCase() === 'desc' || rudder === true || rudder === 1) ? 1 : 0;
         },
         getBoolean: function (boolean) {
-            boolean = Helper.inArray(boolean, ['and', 'or'], 0) != -1 ? __booleans_map[boolean] : boolean;
+            boolean = Helper.inArray(boolean, ['and', 'or'], 0) !== -1 ? __booleans_map[boolean] : boolean;
             return (Helper.isString(boolean) && Helper.inArray(boolean, __booleans, 0) > -1 ? boolean : __booleans[0]);
         },
         getOperator: function (operator) {
@@ -637,7 +637,7 @@
                             result.push(Helper.extend({}, row_callback.apply(Helper, [row1, row2, true])));
                         }
                     });
-                } else if (Helper.inArray(join_type, ['left', 'right'], 0) != -1 && Helper.isFunction(row_callback)) {
+                } else if (Helper.inArray(join_type, ['left', 'right'], 0) !== -1 && Helper.isFunction(row_callback)) {
                     result.push(Helper.extend({}, row_callback.apply(Helper, [row1, row2_temp, false])));
                 }
             });
@@ -653,7 +653,7 @@
             var new_list = [];
             if (list.length > 0 && Helper.isFunction(callback)) {
                 Helper.each(list, function (i, row) {
-                    if (callback.call(row, row, i) == true) {
+                    if (callback.call(row, row, i) === true) {
                         new_list.push(row);
                     }
                 });
@@ -698,7 +698,8 @@
 
                         if (Helper.isDefined(order['fx'])) {
                             keys = keys.sort(function (a, b) {
-                                var A = parseFloat(order['fx'].call(Vendor, groups.data[a])), B = parseFloat(order['fx'].call(Vendor, groups.data[b]));
+                                var A = parseFloat(order['fx'].call(Vendor, groups.data[a])),
+                                    B = parseFloat(order['fx'].call(Vendor, groups.data[b]));
                                 return (A < B ? -1 : 1) * [1, -1][+!!reverse];
                             });
                         } else {
@@ -744,7 +745,7 @@
             Helper.each(columns, function (k, n) {
                 var _f = n['field'];
                 if (Helper.isDefined(row[_f])) {
-                    new_row[(n['alias'] == '' ? n['field'] : n['alias'])] = row[_f];
+                    new_row[(n['alias'] === '' ? n['field'] : n['alias'])] = row[_f];
                 }
             });
             return new_row;
@@ -792,7 +793,7 @@
         },
         table: function (data, callback) {
             var that = this;
-            if(arguments.length>0){
+            if (arguments.length > 0) {
                 that.clear();
                 __data = data;
                 __time = (new Date()).getTime();
@@ -803,7 +804,7 @@
             return this;
         },
         debug: function (debug) {
-            _debug = debug==false;
+            _debug = debug === false;
             return this;
         }
     };
@@ -828,7 +829,7 @@
          * @returns {*}
          */
         from: function (data) {
-          return this.table(data);
+            return this.table(data);
         },
         /**
          * set fields
@@ -871,13 +872,13 @@
                 for (var rf in second) {
                     if (second.hasOwnProperty(rf)) {
                         var _nrf = rf.indexOf('.') > -1 ? rf : t2_alias + '.' + rf;
-                        obj[_nrf] = (is_both == true ? second[rf] : null);
+                        obj[_nrf] = (is_both === true ? second[rf] : null);
                     }
                 }
                 return obj;
             };
 
-            if (join_type == 'right' || (join_type == 'inner' && __data.length > list2.length)) {
+            if (join_type === 'right' || (join_type === 'inner' && __data.length > list2.length)) {
                 __data = Algorithm.join(list2, key2, __data, key1, join_type, get_new_row);
             } else {
                 __data = Algorithm.join(__data, key1, list2, key2, join_type, get_new_row);
@@ -1000,7 +1001,7 @@
          * @returns {*}
          */
         limit: function (offset, size) {
-            if (arguments.length == 1) {
+            if (arguments.length === 1) {
                 __bindings['limit'] = [0, Math.max(0, offset)];
             } else if (arguments.length > 1) {
                 __bindings['limit'] = [Math.max(0, offset), Math.max(0, offset + size)];
@@ -1052,8 +1053,8 @@
             return list;
         },
         find: function () {
-            if(arguments){
-                this.where.call(this,arguments);
+            if (arguments) {
+                this.where.call(this, arguments);
             }
             var list = this.get();
             return list.length > 0 ? list[0] : null;
@@ -1063,7 +1064,7 @@
          * @returns {number}
          */
         remove: function () {
-            if(arguments.length>0){
+            if (arguments.length > 0) {
                 this.where.apply(this, arguments);
             }
 
