@@ -18,16 +18,15 @@
         __booleans = ['&&', '||', '|'],
         __booleans_map = {and: '&&', or: '||'},
         __join_types = ['left', 'right', 'inner'],
-        __booleans_or_arr = ['||', '|', 'or'];
+        __booleans_or_arr = ['||', '|', 'or'],
 
-    let version = "1.2.1",
-
+        version = "1.2.1",
         r_trim = /^[\s\uFEFF\xA0]+|[\s\uFEFF\xA0]+$/g,
-        escape_rgx = /[\\'\r\n\u2028\u2029]/g;
+        escape_rgx = /[\\'\r\n\u2028\u2029]/g,
 
-    // Certain characters need to be escaped so that they can be put into a
-    // string literal.
-    let escapes = {"'": "'", '\\': '\\', '\r': 'r', '\n': 'n', '\u2028': 'u2028', '\u2029': 'u2029'};
+        // Certain characters need to be escaped so that they can be put into a
+        // string literal.
+        escapes = {"'": "'", '\\': '\\', '\r': 'r', '\n': 'n', '\u2028': 'u2028', '\u2029': 'u2029'};
 
     /**
      *
@@ -317,7 +316,7 @@
             return Object.prototype.toString.call(o);
         },
         /**
-         *
+         * @param o
          * @returns {boolean}
          */
         isNull: function (o) {
@@ -347,18 +346,27 @@
             return this.getType(o) === '[object Array]';
         },
         /**
-         *
+         * @param o
          * @returns {boolean}
          */
         isObject: function (o) {
             return this.getType(o) === '[object Object]';
         },
         /**
-         *
+         * @param o
          * @returns {boolean}
          */
         isFunction: function (o) {
             return this.getType(o) === '[object Function]';
+        },
+
+        /**
+         *
+         * @param o
+         * @returns {boolean}
+         */
+        isBoolean: function (o) {
+            return this.getType(o) === '[object Boolean]';
         },
         /**
          *

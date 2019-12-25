@@ -17,16 +17,16 @@
         __booleans = ['&&', '||', '|'],
         __booleans_map = {and: '&&', or: '||'},
         __join_types = ['left', 'right', 'inner'],
-        __booleans_or_arr = ['||', '|', 'or'];
-
-    let version = "1.2.1",
+        __booleans_or_arr = ['||', '|', 'or'],
+        
+        version = "1.2.1",
 
         r_trim = /^[\s\uFEFF\xA0]+|[\s\uFEFF\xA0]+$/g,
-        escape_rgx = /[\\'\r\n\u2028\u2029]/g;
+        escape_rgx = /[\\'\r\n\u2028\u2029]/g,
 
-    // Certain characters need to be escaped so that they can be put into a
-    // string literal.
-    let escapes = {"'": "'", '\\': '\\', '\r': 'r', '\n': 'n', '\u2028': 'u2028', '\u2029': 'u2029'};
+        // Certain characters need to be escaped so that they can be put into a
+        // string literal.
+        escapes = {"'": "'", '\\': '\\', '\r': 'r', '\n': 'n', '\u2028': 'u2028', '\u2029': 'u2029'};
 
     /**
      *
@@ -358,6 +358,14 @@
          */
         isFunction: function (o) {
             return this.getType(o) === '[object Function]';
+        },
+        /**
+         *
+         * @param o
+         * @returns {boolean}
+         */
+        isBoolean: function (o) {
+            return this.getType(o) === '[object Boolean]';
         },
         /**
          *
