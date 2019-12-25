@@ -1060,7 +1060,7 @@
             that.clear();
             return list;
         },
-        find: function () {
+        find: function (where) {
             if (arguments) {
                 this.where.call(this, arguments);
             }
@@ -1071,7 +1071,7 @@
          *
          * @returns {number}
          */
-        remove: function () {
+        remove: function (where) {
             if (arguments.length > 0) {
                 this.where.apply(this, arguments);
             }

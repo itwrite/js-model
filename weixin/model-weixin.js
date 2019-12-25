@@ -18,7 +18,7 @@
         __booleans_map = {and: '&&', or: '||'},
         __join_types = ['left', 'right', 'inner'],
         __booleans_or_arr = ['||', '|', 'or'],
-        
+
         version = "1.2.1",
 
         r_trim = /^[\s\uFEFF\xA0]+|[\s\uFEFF\xA0]+$/g,
@@ -1059,7 +1059,7 @@
             that.clear();
             return list;
         },
-        find: function () {
+        find: function (where) {
             if (arguments) {
                 this.where.call(this, arguments);
             }
@@ -1070,7 +1070,7 @@
          *
          * @returns {number}
          */
-        remove: function () {
+        remove: function (where) {
             if (arguments.length > 0) {
                 this.where.apply(this, arguments);
             }
