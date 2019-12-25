@@ -1125,18 +1125,18 @@
             }
             return effect_rows;
         },
-        fetch: function (callback) {
+        each: function (callback) {
             let that = this;
-            let list = that.get();
 
             if (Helper.isFunction(callback)) {
-                Debug.log('fetch begin');
+                let list = that.get();
+                Debug.log('each begin');
                 Helper.each(list, callback);
-                Debug.log('fetch end');
+                Debug.log('each end');
                 return that;
             }
 
-            return list;
+            return that;
         },
         select: function (fields) {
             return this.fields(fields).get();

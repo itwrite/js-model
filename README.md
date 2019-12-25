@@ -22,7 +22,7 @@ limit(offset,size)
 get()
 find()
 update(data)
-fetch(callback)
+each(callback)
 select(fields)
 count()
 filter(callback)
@@ -84,8 +84,8 @@ console.log(categories);
 //Example 4:
 Model(goods)
 .where({"id":"2"})
-.fetch(function (i, row) {
-//The fetch funciton, if you give it a callback Function as paramter, 
+.each(function (i, row) {
+//The each funciton, if you give it a callback Function as paramter, 
 //then it will be call when foreach very item of result;
 console.log('each row:',row);
 });
