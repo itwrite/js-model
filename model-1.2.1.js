@@ -10,7 +10,7 @@
         typeof define === 'function' && define.amd ? define(factory) :
             (global.M = global.Model = factory());
 }(typeof window !== "undefined" ? window : this, function () {
-    var _debug = true,
+    let __debug = true,
         __bindings = {},
         __time = null,
         __data = [],
@@ -20,25 +20,25 @@
         __join_types = ['left', 'right', 'inner'],
         __booleans_or_arr = ['||', '|', 'or'];
 
-    var version = "1.2.1",
+    let version = "1.2.1",
 
         r_trim = /^[\s\uFEFF\xA0]+|[\s\uFEFF\xA0]+$/g,
-        escape_rgx = /\\|'|\r|\n|\u2028|\u2029/g;
+        escape_rgx = /[\\'\r\n\u2028\u2029]/g;
 
     // Certain characters need to be escaped so that they can be put into a
     // string literal.
-    var escapes = {"'": "'", '\\': '\\', '\r': 'r', '\n': 'n', '\u2028': 'u2028', '\u2029': 'u2029'};
+    let escapes = {"'": "'", '\\': '\\', '\r': 'r', '\n': 'n', '\u2028': 'u2028', '\u2029': 'u2029'};
 
     /**
      *
      * @type {{log: Function}}
      */
-    var Debug = {
+    let Debug = {
         log: function () {
-            if (_debug === true) {
-                var time = (new Date()).getTime();
-                var arr = ["echo[" + (time - __time) / 1000 + "s]:"];
-                for (var i in arguments) {
+            if (__debug === true) {
+                let time = (new Date()).getTime();
+                let arr = ["echo[" + (time - __time) / 1000 + "s]:"];
+                for (let i in arguments) {
                     if (arguments.hasOwnProperty(i)) {
                         arr.push(arguments[i]);
                     }
@@ -48,7 +48,7 @@
         }
     };
 
-    var Fun = {
+    let Fun = {
         /**
          *
          * @param param1
@@ -82,7 +82,7 @@
      *
      * @type {{data, each: Function, sum: Function}}
      */
-    var Vendor = {
+    let Vendor = {
         get data() {
             return __data;
         },
@@ -90,7 +90,7 @@
             Helper.each.apply(this, arguments);
         },
         sum: function (field, list) {
-            var sum = 0;
+            let sum = 0;
             this.each(list, function (i, row) {
                 if (Helper.isDefined(row[field])) {
                     sum += parseFloat(row[field]);
@@ -112,7 +112,7 @@
      * @constructor
      */
     function ConditionObj(key, operator, val, boolean) {
-        var _operator = __operators[0], _boolean = __booleans[0];
+        let _operator = __operators[0], _boolean = __booleans[0];
         Object.defineProperty(this, 'boolean', {
             get: function () {
                 return _boolean;
@@ -141,7 +141,7 @@
      * @constructor
      */
     function WhereObj(boolean) {
-        var _boolean, _conditionArr = [];
+        let _boolean, _conditionArr = [];
         Object.defineProperty(this, 'boolean', {
             get: function () {
                 return _boolean;
@@ -166,10 +166,10 @@
          * @returns {WhereObj}
          */
         this.where = function (key, operator, val, boolean) {
-            var that = this;
+            let that = this;
             if (Helper.isObject(key)) {
                 boolean = operator;
-                for (var k in key) {
+                for (let k in key) {
                     if (key.hasOwnProperty(k)) {
                         that.where(k, __operators[0], key[k], boolean);
                     }
@@ -183,23 +183,23 @@
                 }
             } else if (Helper.isFunction(key)) {
                 boolean = operator;
-                var w_obj = new WhereObj(boolean);
+                let w_obj = new WhereObj(boolean);
                 key.call(w_obj);
                 _conditionArr.push(w_obj);
             }
             return this;
         };
 
-        var resolveCondition = function (params, cond) {
+        let resolveCondition = function (params, cond) {
             if (cond instanceof WhereObj) {
                 return cond.isMatch(params);
             } else if (cond instanceof ConditionObj) {
-                var field = cond['field'];
-                var value = cond['value'];
+                let field = cond['field'];
+                let value = cond['value'];
                 value = String(value).replace(escape_rgx, function (match) {
                     return '\\' + escapes[match];
                 });
-                var j_bok = false;
+                let j_bok = false;
                 if (Helper.isDefined(params[field])) {
                     switch (cond['operator']) {
                         case '=':
@@ -231,9 +231,9 @@
                             j_bok = params[field] >= value;
                             break;
                         case 'like':
-                            var regExpStr = String(value)
+                            let regExpStr = String(value)
                                 .replace(/%/g, '(.*)');
-                            var regExpObj = new RegExp("^" + regExpStr + "$");
+                            let regExpObj = new RegExp("^" + regExpStr + "$");
                             j_bok = regExpObj.test(params[field]);
                             break;
                         default :
@@ -246,14 +246,14 @@
         };
 
         this.isMatch = function (data) {
-            var that = this;
-            var conditions = that.conditions;
+            let that = this;
+            let conditions = that.conditions;
             //如果condition为空，则反回true
             if (conditions.length === 0) {
                 return true;
             }
-            //var firstCond = conditions[0];
-            var bool = false;
+            //let firstCond = conditions[0];
+            let bool = false;
             Helper.each(conditions, function (i, cond) {
                 if (parseInt(i) > 0) {
                     //if 'or'
@@ -270,7 +270,7 @@
         }
     }
 
-    var Helper = {
+    let Helper = {
         /**
          *
          * @param elem
@@ -279,7 +279,7 @@
          * @returns {number}
          */
         inArray: function (elem, arr, i) {
-            var len;
+            let len;
 
             if (arr) {
                 if ([].indexOf) {
@@ -383,7 +383,7 @@
          * @returns {boolean}
          */
         isEmptyObject: function (obj) {
-            var i = 0, name;
+            let i = 0, name;
             for (name in obj) {
                 i++;
                 if (i > 0) return false;
@@ -397,7 +397,7 @@
          * @returns {*}
          */
         isPlainObject: function (obj) {
-            var key, that = this;
+            let key, that = this;
 
             // Must be an Object.
             // Because of IE, we also have to check the presence of the constructor property.
@@ -405,7 +405,7 @@
             if (!obj || typeof (obj) !== "object" || obj.nodeType || that.isWindow(obj)) {
                 return false;
             }
-            var hasOwnProperty = Object.prototype.hasOwnProperty;
+            let hasOwnProperty = Object.prototype.hasOwnProperty;
             try {
 
                 // Not own constructor property must be Object
@@ -432,12 +432,12 @@
          * @returns {*}
          */
         copy: function (obj) {
-            var that = this;
+            let that = this;
             if (Helper.isNull(obj) || typeof obj !== 'object') {
                 return obj;
             }
 
-            var new_obj = Helper.isArray(obj) ? [] : {};
+            let new_obj = Helper.isArray(obj) ? [] : {};
             Helper.each(obj, function (i, n) {
                 new_obj[i] = that.copy(n);
             });
@@ -449,7 +449,7 @@
          * @returns {*|{}}
          */
         extend: function () {
-            var src, copyIsArray, copy, name, options, clone,
+            let src, copyIsArray, copy, name, options, clone,
                 target = arguments[0] || {},
                 i = 1,
                 length = arguments.length,
@@ -526,7 +526,7 @@
          * @returns {*}
          */
         each: function (obj, callback) {
-            var length, i = 0;
+            let length, i = 0;
             if (Helper.isArray(obj)) {
                 length = obj.length;
                 for (; i < length; i++) {
@@ -535,7 +535,7 @@
                     }
                 }
             } else {
-                for (var k in obj) {
+                for (let k in obj) {
                     if (obj.hasOwnProperty(k) && callback.call(obj[k], k, obj[k]) === false) {
                         break;
                     }
@@ -553,14 +553,14 @@
         };
     });
 
-    var Algorithm = {
+    let Algorithm = {
         extend: function () {
             Helper.extend.apply(this, arguments);
         },
         splitName: function (name, glue) {
             glue = glue ? glue : ' ';
             name = Helper.trim(name.replace(/\s+/g, ' '));
-            var arr = name.split(glue);
+            let arr = name.split(glue);
             name = arr[0];
             return [name, (arr.length > 1 ? arr[1] : name)];
         },
@@ -578,13 +578,13 @@
             return (Helper.isString(operator) && Helper.inArray(operator, __operators, 0) > -1 ? operator : __operators[0]);
         },
         getColumns: function (row, fields) {
-            var columns = [], f;
-            var _fields = fields;//should be array
+            let columns = [], f;
+            let _fields = fields;//should be array
             _fields = _fields.length > 0 ? _fields : ['*'];
             //field
-            var field_count = 0;
-            for (var i = 0; i < _fields.length; i++) {
-                var field = _fields[i];
+            let field_count = 0;
+            for (let i = 0; i < _fields.length; i++) {
+                let field = _fields[i];
                 if (Helper.isString(field)) {
                     //去掉左右空格
                     field = Helper.trim(field);
@@ -599,7 +599,7 @@
                             }
                         }
                     } else {
-                        var arr = field.replace(/\s+(as)\s+/i, ' ').split(' ');
+                        let arr = field.replace(/\s+(as)\s+/i, ' ').split(' ');
                         columns.push({field: arr[0], alias: (arr[1] ? arr[1] : '')});
                     }
                 } else if (Helper.isObject(field)) {
@@ -624,12 +624,12 @@
          * @returns {Array}
          */
         join: function (list1, key1, list2, key2, join_type, row_callback) {
-            var that = this, result = [], row2_temp = list2[0];// Object.keys(list2[0]);
-            var groups = that.getGroups(list2, key2);
+            let that = this, result = [], row2_temp = list2[0];// Object.keys(list2[0]);
+            let groups = that.getGroups(list2, key2);
             //Debug.log(key1,key2,list1);
 
             Helper.each(list1, function (i, row1) {
-                var val = row1[key1];
+                let val = row1[key1];
                 //if it's matched
                 if (Helper.isDefined(groups.data[val])) {
                     Helper.each(groups.data[val], function (j, row2) {
@@ -650,7 +650,7 @@
          * @returns {*}
          */
         filter: function (list, callback) {
-            var new_list = [];
+            let new_list = [];
             if (list.length > 0 && Helper.isFunction(callback)) {
                 Helper.each(list, function (i, row) {
                     if (callback.call(row, row, i) === true) {
@@ -672,22 +672,22 @@
          */
         orderBy: function (list, order_by_arr, order_by_i, callback) {
             order_by_i = order_by_i > 0 ? order_by_i : 0;
-            var that = this, new_list = [];
+            let that = this, new_list = [];
             //需要排序
             if (order_by_arr.length > 0 && order_by_i < order_by_arr.length) {
-                var sort = order_by_arr[order_by_i];
-                var field = sort['field'];
+                let sort = order_by_arr[order_by_i];
+                let field = sort['field'];
 
-                var groups = that.getGroups(list, field);
-                var keys = groups.keys;
+                let groups = that.getGroups(list, field);
+                let keys = groups.keys;
 
                 if (keys.length > 0) {
                     if (Helper.isDefined(sort['rudder'])) {
-                        var order = sort['rudder'];
+                        let order = sort['rudder'];
                         /**
                          * sort
                          */
-                        var reverse = !1;
+                        let reverse = !1;
                         if (Helper.isObject(order)) {
                             if (Helper.isDefined(order['reverse'])) {
                                 reverse = that.getReverseType(order['reverse']);
@@ -698,7 +698,7 @@
 
                         if (Helper.isDefined(order['fx'])) {
                             keys = keys.sort(function (a, b) {
-                                var A = parseFloat(order['fx'].call(Vendor, groups.data[a])),
+                                let A = parseFloat(order['fx'].call(Vendor, groups.data[a])),
                                     B = parseFloat(order['fx'].call(Vendor, groups.data[b]));
                                 return (A < B ? -1 : 1) * [1, -1][+!!reverse];
                             });
@@ -713,7 +713,7 @@
                      * 排好序后遍历输出
                      */
                     Helper.each(keys, function (i, k) {
-                        var lst = groups.data[k];
+                        let lst = groups.data[k];
                         lst = that.orderBy(lst, order_by_arr, order_by_i + 1, callback);
                         Helper.each(lst, function (j, row) {
                             new_list.push(row);
@@ -741,9 +741,9 @@
          */
         getRow: function (row, columns) {
             /**/
-            var new_row = {};
+            let new_row = {};
             Helper.each(columns, function (k, n) {
-                var _f = n['field'];
+                let _f = n['field'];
                 if (Helper.isDefined(row[_f])) {
                     new_row[(n['alias'] === '' ? n['field'] : n['alias'])] = row[_f];
                 }
@@ -757,12 +757,12 @@
          * @returns {{data: {}, keys: Array}}
          */
         getGroups: function (list, field) {
-            var result = {data: {}, keys: []};
+            let result = {data: {}, keys: []};
             Helper.each(list, function (i, row) {
                 if (Helper.isDefined(row[field])) {
-                    var res = true;
+                    let res = true;
                     if (res !== false) {
-                        var key = row[field];
+                        let key = row[field];
                         if (!Helper.isDefined(result['data'][key])) {
                             result.data[key] = [];
                             result.keys.push(key);
@@ -776,7 +776,7 @@
     };
 
     // Define a local copy of Model
-    var Model = function (data, callback) {
+    let Model = function (data, callback) {
         // The Model object is actually just the init constructor 'enhanced'
         // Need init if Model is called (just allow error to be thrown if not included)
         return new Model.fn.table(data, callback);
@@ -792,7 +792,7 @@
             return Helper.extend.apply(this, arguments);
         },
         table: function (data, callback) {
-            var that = this;
+            let that = this;
             if (arguments.length > 0) {
                 that.clear();
                 __data = data;
@@ -804,7 +804,7 @@
             return this;
         },
         debug: function (debug) {
-            _debug = debug === false;
+            __debug = debug === false;
             return this;
         }
     };
@@ -837,7 +837,7 @@
          * @returns {*}
          */
         fields: function (fields) {
-            var that = this;
+            let that = this;
             if (Helper.isString(fields) || Helper.isObject(fields)) {
                 __bindings['fields'].push(fields);
             } else if (Helper.isArray(fields)) {
@@ -856,22 +856,22 @@
          * @returns {*}
          */
         join: function (key1, list2, key2, join_type) {
-            var that = this;
+            let that = this;
 
             join_type = Algorithm.getJoinType(join_type);
-            var t2_arr = Algorithm.splitName(key2, '.');
-            var t2_alias = t2_arr[0];
+            let t2_arr = Algorithm.splitName(key2, '.');
+            let t2_alias = t2_arr[0];
             key2 = t2_arr[1];
-            var get_new_row = function (one, second, is_both) {
-                var obj = {};
-                for (var lf in one) {
+            let get_new_row = function (one, second, is_both) {
+                let obj = {};
+                for (let lf in one) {
                     if (one.hasOwnProperty(lf)) {
                         obj[lf] = one[lf];
                     }
                 }
-                for (var rf in second) {
+                for (let rf in second) {
                     if (second.hasOwnProperty(rf)) {
-                        var _nrf = rf.indexOf('.') > -1 ? rf : t2_alias + '.' + rf;
+                        let _nrf = rf.indexOf('.') > -1 ? rf : t2_alias + '.' + rf;
                         obj[_nrf] = (is_both === true ? second[rf] : null);
                     }
                 }
@@ -907,11 +907,11 @@
          * @returns {*}
          */
         where_in: function (field, values, boolean) {
-            var that = this;
+            let that = this;
             if (Helper.isString(field)) {
                 that.where(function () {
                     if (Helper.isArray(values)) {
-                        for (var k in values) {
+                        for (let k in values) {
                             if (values.hasOwnProperty(k)) {
                                 this.where(field, __operators[0], values[k], __booleans_or_arr[0]);
                             }
@@ -929,11 +929,11 @@
          * @returns {*}
          */
         where_not_in: function (field, values, boolean) {
-            var that = this;
+            let that = this;
             if (Helper.isString(field)) {
                 that.where(function () {
                     if (Helper.isArray(values)) {
-                        for (var k in values) {
+                        for (let k in values) {
                             if (values.hasOwnProperty(k)) {
                                 this.where(field, '!=', values[k], __booleans[0]);
                             }
@@ -952,7 +952,7 @@
          * @returns {*}
          */
         where_between: function (field, range, boolean) {
-            var that = this;
+            let that = this;
             if (Helper.isArray(range) && range.length > 1) {
                 that.where(function () {
                     this.where(field, '>', Math.min(range[0], range[1]), boolean);
@@ -969,7 +969,7 @@
          * @returns {*}
          */
         where_like: function (field, value, boolean) {
-            var that = this;
+            let that = this;
             that.where(field, 'like', value, boolean);
             return that;
         },
@@ -980,7 +980,7 @@
          * @returns {*}
          */
         order_by: function (field, rudder) {
-            var that = this;
+            let that = this;
             if (Helper.isArray(field)) {
                 Helper.each(field, function (i, f) {
                     that.order_by(f, rudder);
@@ -1013,11 +1013,11 @@
          * @returns {Array}
          */
         get: function () {
-            var that = this;
-            var list = __data;
+            let that = this;
+            let list = __data;
 
             //Debug.log(__data[0]);
-            var columns = Algorithm.getColumns(__data[0], __bindings['fields']);
+            let columns = Algorithm.getColumns(__data[0], __bindings['fields']);
             Debug.log('columns:', columns);
             /**
              * 如果有where 则筛选。
@@ -1036,7 +1036,7 @@
                     return Algorithm.getRow(row, columns);
                 });
             } else {
-                var newList = [];
+                let newList = [];
                 Helper.each(list, function (i, row) {
                     newList.push(Algorithm.getRow(row, columns));
                 });
@@ -1056,7 +1056,7 @@
             if (arguments) {
                 this.where.call(this, arguments);
             }
-            var list = this.get();
+            let list = this.get();
             return list.length > 0 ? list[0] : null;
         },
         /**
@@ -1071,10 +1071,10 @@
             /**
              * 如果有where 则筛选。
              */
-            var effect_rows = 0;
+            let effect_rows = 0;
 
             if (__bindings['where'].conditions.length > 0) {
-                var list = Algorithm.filter(__data, function (row) {
+                let list = Algorithm.filter(__data, function (row) {
                     if (__bindings['where'].isMatch(row)) {
                         effect_rows++;
                         return true;
@@ -1098,14 +1098,14 @@
             /**
              * 如果有where 则筛选。
              */
-            var effect_rows = 0;
+            let effect_rows = 0;
 
             if (__bindings['where'].conditions.length > 0) {
                 Helper.each(__data, function (i, row) {
                     //匹配上的则更新
                     if (__bindings['where'].isMatch(row)) {
                         effect_rows++;
-                        for (var k in data) {
+                        for (let k in data) {
                             if (data.hasOwnProperty(k)) {
                                 __data[i][k] = data[k];
                             }
@@ -1116,7 +1116,7 @@
             } else {
                 Helper.each(__data, function (i) {
                     effect_rows++;
-                    for (var k in data) {
+                    for (let k in data) {
                         if (data.hasOwnProperty(k)) {
                             __data[i][k] = data[k];
                         }
@@ -1126,8 +1126,8 @@
             return effect_rows;
         },
         fetch: function (callback) {
-            var that = this;
-            var list = that.get();
+            let that = this;
+            let list = that.get();
 
             if (Helper.isFunction(callback)) {
                 Debug.log('fetch begin');
