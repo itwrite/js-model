@@ -22,7 +22,7 @@
       global.M = global.Model = factory();
   }
 }(typeof window !== "undefined" ? window : this, function () {
-    let __debug = true,
+    let __debug = false,
         __bindings = {},
         __time = null,
         __data = [],
